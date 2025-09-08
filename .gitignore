@@ -1,0 +1,60 @@
+# ========================================
+# Java
+# ========================================
+*.class
+*.log
+*.jar
+*.war
+*.ear
+
+# Directorios de compilación
+/target/
+/build/
+/out/
+
+# ========================================
+# Maven
+# ========================================
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+.mvn/timing.properties
+
+# ========================================
+# Gradle
+# ========================================
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ========================================
+# IntelliJ IDEA
+# ========================================
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ========================================
+# Archivos del sistema operativo
+# ========================================
+.DS_Store
+Thumbs.db
+
+# ========================================
+# Logs
+# ========================================
+*.log
+logs/
+*.pid
+
+# ========================================
+# Variables de entorno y config sensible
+# ========================================
+.env
+application-*.yml
+application-*.properties
+
+# ========================================
+# Otros
+# ========================================
+*.swp

@@ -1,0 +1,85 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.2'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.cryptomessage'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // REACTIVE SPRING
+    //implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    //NORMAL SPRING
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    //
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // DEV TOOLS
+
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // SWAGGER
+
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'io.springfox:springfox-swagger2:3.0.0'
+    implementation 'io.springfox:springfox-swagger-ui:3.0.0'
+
+    // MYSQL
+
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.data:spring-data-jpa:3.3.4'
+
+    // // MARIADB DRIVER
+
+    // implementation 'org.mariadb.jdbc:mariadb-java-client:3.4.1'
+
+    //runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    //implementation 'mysql:mysql-connector-java:8.0.28'
+
+    // //
+
+    // MYSQL DRIVER
+
+    // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
+    implementation("com.mysql:mysql-connector-j:9.4.0")
+
+    // JWT
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+    // SECURITY
+
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    
+    // ENCRYPT
+    
+    // https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    // https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+
+
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
