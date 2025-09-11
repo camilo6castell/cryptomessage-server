@@ -12,9 +12,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-// TO DO
-// IMPLEMENT CSRF PROTECTION
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -27,8 +24,7 @@ public class SecurityConfig {
     ) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(Customizer.withDefaults()) // if the machine fails working with the frontend
-//                .httpBasic(Customizer.withDefaults())
+                .cors(Customizer.withDefaults()) // Spring usará el bean de CorsConfig
                 .authorizeHttpRequests(
                         authorizeHttpRequests -> authorizeHttpRequests
                                 .requestMatchers("/api/v1/auth/**").permitAll()
