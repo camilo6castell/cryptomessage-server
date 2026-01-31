@@ -1,4 +1,4 @@
-package com.cryptomessage.server.model.persistance.user;
+package com.cryptomessage.server.model.entity.user;
 
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;

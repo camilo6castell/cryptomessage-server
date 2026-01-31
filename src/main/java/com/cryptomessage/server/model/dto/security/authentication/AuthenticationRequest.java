@@ -1,12 +1,9 @@
 package com.cryptomessage.server.model.dto.security.authentication;
 
-public class AuthenticationRequest {
+public final class AuthenticationRequest {
 
-    private String username;
-    private String passphrase;
-
-    public AuthenticationRequest() {
-    }
+    private final String username;
+    private final String passphrase;
 
     public AuthenticationRequest(String username, String passphrase) {
         this.username = username;
@@ -17,15 +14,8 @@ public class AuthenticationRequest {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getPassphrase() {
         return passphrase;
     }
-
-    public void setPassphrase(String passphrase) {
-        this.passphrase = passphrase;
-    }
 }
+

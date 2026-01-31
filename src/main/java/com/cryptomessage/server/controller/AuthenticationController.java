@@ -1,69 +1,69 @@
 package com.cryptomessage.server.controller;
 
 import com.cryptomessage.server.model.dto.security.authentication.AuthenticationRequest;
-import com.cryptomessage.server.model.dto.security.authentication.VerifyTokenRequest;
+import com.cryptomessage.server.model.dto.security.authentication.AuthenticationResponse;
+import com.cryptomessage.server.model.dto.security.authentication.LoginResponse;
 import com.cryptomessage.server.model.dto.security.register.RegisterRequest;
 import com.cryptomessage.server.services.AuthenticationService;
-import org.bouncycastle.operator.OperatorCreationException;
+import com.cryptomessage.server.services.UserRegistrationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-
-@RestController
 @RequestMapping("/api/v1/auth")
+@RestController
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
+    private final UserRegistrationService userRegistrationService;
 
     public AuthenticationController(
-            AuthenticationService authenticationService
+            AuthenticationService authenticationService,
+            UserRegistrationService userRegistrationService
     ) {
         this.authenticationService = authenticationService;
+        this.userRegistrationService = userRegistrationService;
     }
 
-    //    @CrossOrigin(origins = "http://localhost:5173/")
+    /* ================= REGISTER ================= */
+
     @PostMapping("/register")
     public ResponseEntity<Void> register(
-            @RequestBody RegisterRequest registerRequest
-    ) throws
-            NoSuchAlgorithmException,
-            IOException,
-            NoSuchProviderException,
-            OperatorCreationException {
-        authenticationService.createUser(
-                registerRequest.getUsername(),
-                registerRequest.getPassphrase()
+            @RequestBody RegisterRequest request
+    ) throws Exception {
+
+        userRegistrationService.createUser(
+                request.getUsername(),
+                request.getPassphrase()
         );
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    //    @CrossOrigin(origins = "http://localhost:5173/")
-    @PostMapping("/authenticate")
-    public ResponseEntity<?> login(
-            @RequestBody AuthenticationRequest authenticationRequest
+    /* ================= LOGIN ================= */
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody AuthenticationRequest request
+    ) throws Exception {
+
+        return ResponseEntity.ok(
+                authenticationService.authenticate(
+                        request.getUsername(),
+                        request.getPassphrase()
+                )
+        );
+    }
+
+    /* ================= TOKEN VERIFY ================= */
+
+    @GetMapping("/verify")
+    public ResponseEntity<AuthenticationResponse> verifyToken(
+            @RequestHeader("Authorization") String bearerToken
     ) {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(authenticationService.authenticate(
-                        authenticationRequest.getUsername(),
-                        authenticationRequest.getPassphrase()
-                ));
+
+        return ResponseEntity.ok(
+                authenticationService.verifyToken(bearerToken)
+        );
     }
-
-    //    @CrossOrigin(origins = "http://localhost:5173/")
-    @PostMapping("/verify-token")
-    public ResponseEntity<?> verifyToken(
-            @RequestBody VerifyTokenRequest verifyTokenRequest
-    ) {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(authenticationService.verifyToken(
-                        verifyTokenRequest.getToken()
-                ));
-
-    }
-
 }

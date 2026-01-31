@@ -1,6 +1,6 @@
 package com.cryptomessage.server.services;
 
-import com.cryptomessage.server.model.persistance.user.AppUser;
+import com.cryptomessage.server.model.entity.user.AppUser;
 import com.cryptomessage.server.repositories.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -9,9 +9,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class UserDetailsServiceImp implements UserDetailsService {
+
+    private static final List<GrantedAuthority> DEFAULT_AUTHORITIES =
+            List.of((GrantedAuthority) () -> "USER");
 
     private final UserRepository userRepository;
 
@@ -20,11 +24,19 @@ public class UserDetailsServiceImp implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username){
+    public UserDetails loadUserByUsername(String username) {
         AppUser appUser = userRepository.findUserByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
-        /* this should be implemented in a better way granting authorities saved in the database (and implementing
-        the UserDetails interface in [or related] to the entity class) */
+                .orElseThrow(() ->
+                        new NoSuchElementException("User not found: " + username)
+                );
+        return toUserDetails(appUser);
+    }
+
+    public UserDetails loadUserByAppUser(AppUser appUser) {
+        return toUserDetails(appUser);
+    }
+
+    private UserDetails toUserDetails(AppUser appUser) {
         return new User(
                 appUser.getUsername(),
                 appUser.getPassphraseHash(),
@@ -32,70 +44,7 @@ public class UserDetailsServiceImp implements UserDetailsService {
                 true,
                 true,
                 true,
-                List.of(
-                        (GrantedAuthority) () -> "USER"
-                )
+                DEFAULT_AUTHORITIES
         );
     }
-
-    public UserDetails loadUserByAppUser(AppUser appUser){
-        /* this should be implemented in a better way granting authorities saved in the database (and implementing
-        the UserDetails interface in [or related] to the entity class) */
-        return new User(
-                appUser.getUsername(),
-                appUser.getPassphraseHash(),
-                true,
-                true,
-                true,
-                true,
-                List.of(
-                        (GrantedAuthority) () -> "USER"
-                )
-        );
-    }
-
-//    This is a simple implementation of the UserDetails interface
-//    private final User user;
-//
-//    public UserDetailsServiceImp(User user) {
-//        this.user = user;
-//    }
-//
-//    @Override
-//    public Collection<? extends GrantedAuthority> getAuthorities() {
-//        //return List.of();
-//        return null;
-//    }
-//
-//    @Override
-//    public String getPassword() {
-//        return user.getPasswordHash();
-//    }
-//
-//    @Override
-//    public String getUsername() {
-//        return user.getUsername();
-//    }
-//
-//    @Override
-//    public boolean isAccountNonExpired() {
-//        return UserDetails.super.isAccountNonExpired();
-//    }
-//
-//    @Override
-//    public boolean isAccountNonLocked() {
-//        return UserDetails.super.isAccountNonLocked();
-//    }
-//
-//    @Override
-//    public boolean isCredentialsNonExpired() {
-//        return UserDetails.super.isCredentialsNonExpired();
-//    }
-//
-//    @Override
-//    public boolean isEnabled() {
-//        return UserDetails.super.isEnabled();
-//    }
 }
-
-

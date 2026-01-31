@@ -1,6 +1,6 @@
 package com.cryptomessage.server.repositories;
 
-import com.cryptomessage.server.model.persistance.user.AppUser;
+import com.cryptomessage.server.model.entity.user.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

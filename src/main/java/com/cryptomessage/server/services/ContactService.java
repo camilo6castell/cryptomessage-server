@@ -1,179 +1,115 @@
 package com.cryptomessage.server.services;
 
 import com.cryptomessage.server.config.exceptions.ConflictException;
-import com.cryptomessage.server.model.dto.contact.ContactDTO;
-import com.cryptomessage.server.model.persistance.contact.Contact;
-import com.cryptomessage.server.model.persistance.contact.ContactId;
-import com.cryptomessage.server.model.persistance.user.AppUser;
+import com.cryptomessage.server.model.dto.contact.ContactResponse;
+import com.cryptomessage.server.model.entity.contact.Contact;
+import com.cryptomessage.server.model.entity.contact.ContactId;
+import com.cryptomessage.server.model.entity.user.AppUser;
+import com.cryptomessage.server.model.mapper.ContactMapper;
 import com.cryptomessage.server.repositories.ContactRepository;
 import com.cryptomessage.server.repositories.UserRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
+@Transactional
 public class ContactService {
+
     private final UserRepository userRepository;
     private final ContactRepository contactRepository;
+    private final JwtService jwtService;
+    private final ContactMapper contactMapper;
 
-    public ContactService(UserRepository userRepository, ContactRepository contactRepository) {
+    public ContactService(
+            UserRepository userRepository,
+            ContactRepository contactRepository,
+            JwtService jwtService,
+            ContactMapper contactMapper
+    ) {
         this.userRepository = userRepository;
         this.contactRepository = contactRepository;
+        this.jwtService = jwtService;
+        this.contactMapper = contactMapper;
     }
 
-    public ContactDTO searchContact(String username) {
-        return userRepository.findUserByUsername(username)
-                .map(appUser -> ContactDTO.builder()
-                        .withContactId(appUser.getUserId())
-                        .withUsername(appUser.getUsername())
-                        .withPublicKey(appUser.getPublicKey())
-                        .build()
-                )
-                .orElseThrow(() -> new NoSuchElementException("User not found")                );
+    /* ================= SEARCH USER ================= */
+
+    @Transactional(readOnly = true)
+    public ContactResponse searchUserByUsername(String username) {
+
+        AppUser user = userRepository.findUserByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        return new ContactResponse(
+                user.getUserId(),
+                user.getUsername(),
+                contactMapper
+                        .toResponse(new Contact(null, user))
+                        .getPublicKey()
+        );
     }
 
-    public void addContact(Long appUserId, Long contactId) {
-        AppUser appUser = findUserOrThrow(appUserId, "User not authorized");
-        AppUser contact = findUserOrThrow(contactId, "Contact not found");
+    /* ================= LIST CONTACTS ================= */
 
-        validateNotSelfContact(appUser, contact);
+    @Transactional(readOnly = true)
+    public List<ContactResponse> getMyContacts(String bearerToken) {
 
-        ContactId newContactId = createContactId(appUser, contact);
+        AppUser owner = resolveUserFromToken(bearerToken);
 
-        if (contactRepository.existsById(newContactId)) {
+        return owner.getContacts().stream()
+                .map(contactMapper::toResponse)
+                .toList();
+    }
+
+    /* ================= ADD CONTACT ================= */
+
+    public void addContact(String bearerToken, Long contactId) {
+
+        AppUser owner = resolveUserFromToken(bearerToken);
+
+        AppUser contactUser = userRepository.findById(contactId)
+                .orElseThrow(() -> new NoSuchElementException("Contact user not found"));
+
+        if (owner.getUserId().equals(contactUser.getUserId())) {
+            throw new IllegalArgumentException("Cannot add yourself as contact");
+        }
+
+        ContactId id = new ContactId(owner.getUserId(), contactUser.getUserId());
+
+        if (contactRepository.existsById(id)) {
             throw new ConflictException("Contact already exists");
         }
 
-        Contact newContact = Contact.builder()
-                .withAppUser(appUser)
-                .withContact(contact)
-                .build();
-
-        contactRepository.save(newContact);
+        Contact contact = new Contact(owner, contactUser);
+        contactRepository.save(contact);
     }
 
-    @Transactional
-    public void deleteContact(Long appUserId, Long contactId) {
-        AppUser appUser = findUserOrThrow(appUserId, "User not found");
-        AppUser contact = findUserOrThrow(contactId, "Contact not found");
+    /* ================= REMOVE CONTACT ================= */
 
-        validateNotSelfContact(appUser, contact);
+    public void removeContact(String bearerToken, Long contactId) {
 
-        ContactId toDeleteContactId = createContactId(appUser, contact);
+        AppUser owner = resolveUserFromToken(bearerToken);
 
-        if (!contactRepository.existsById(toDeleteContactId)) {
-            throw new NoSuchElementException("Contact does not exist");
-        }
+        ContactId id = new ContactId(owner.getUserId(), contactId);
 
-        contactRepository.deleteById(toDeleteContactId);
+        Contact contact = contactRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Contact not found"));
+
+        contactRepository.delete(contact);
     }
 
-    private AppUser findUserOrThrow(Long userId, String errorMessage) {
-        return userRepository.findUserByUserId(userId)
-                .orElseThrow(() -> new NoSuchElementException(errorMessage));
-    }
+    /* ================= INTERNAL ================= */
 
-    private void validateNotSelfContact(AppUser appUser, AppUser contact) {
-        if (appUser.equals(contact)) {
-            throw new ConflictException("User cannot add/delete themselves as a contact");
-        }
-    }
+    private AppUser resolveUserFromToken(String bearerToken) {
 
-    private ContactId createContactId(AppUser appUser, AppUser contact) {
-        return new ContactId(appUser.getUserId(), contact.getUserId());
+        String token = jwtService.stripBearer(bearerToken);
+        String username = jwtService.extractUsername(token);
+
+        return userRepository.findUserByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
     }
 }
-
-//V0
-//@Service
-//public class ContactService {
-//    private final UserRepository userRepository;
-//    private final ContactRepository contactRepository;
-//
-//    public ContactService(UserRepository userRepository, ContactRepository contactRepository) {
-//        this.userRepository = userRepository;
-//        this.contactRepository = contactRepository;
-//    }
-//
-//    public ResponseEntity<?> searchContact(String username) {
-//        Optional<AppUser> isUser = userRepository.findUserByUsername(username);
-//        if (isUser.isPresent()) {
-//            AppUser appUser = isUser.get();
-//            return ResponseEntity.status(HttpStatus.OK).body(
-//                    SearchContactResponse.builder()
-//                            .contactId(appUser.getUserId())
-//                            .username(appUser.getUsername())
-//                            .publicKey(appUser.getPublicKey())
-//                            .build()
-//            );
-//        } else {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-//        }
-//    }
-//
-//    public ResponseEntity<Void> addContact(Long appUserId, Long contactId) {
-//        Optional<AppUser> isUser = userRepository.findUserByUserId(appUserId);
-//        if (isUser.isPresent()) {
-//            Optional<AppUser> isContact = userRepository.findUserByUserId(contactId);
-//            if (isContact.isPresent()) {
-//                AppUser appUser = isUser.get();
-//                AppUser contact = isContact.get();
-//                if (appUser.equals(contact)) {
-//                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-//                }
-//
-//                ContactId newContactId = new ContactId(appUser.getUserId(), contact.getUserId());
-//
-//
-//                if (contactRepository.existsById(newContactId)) {
-//                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
-//                }
-//
-//                Contact newContact = Contact.builder()
-//                        .withAppUser(appUser)
-//                        .withContact(contact)
-//                        .build();
-//
-//                contactRepository.save(newContact);
-//                return ResponseEntity.status(HttpStatus.CREATED).build();
-//
-//
-//            } else {
-//                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-//            }
-//        } else {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-//        }
-//    }
-//
-//    @Transactional
-//    public ResponseEntity<Void> deleteContact(Long appUserId, Long contactId) {
-//        Optional<AppUser> isUser = userRepository.findUserByUserId(appUserId);
-//        if (isUser.isEmpty()) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-//        }
-//
-//        Optional<AppUser> isContact = userRepository.findUserByUserId(contactId);
-//        if (isContact.isEmpty()) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-//        }
-//
-//        AppUser appUser = isUser.get();
-//        AppUser contact = isContact.get();
-//
-//        // Verificar que no se está intentando eliminar a sí mismo como contacto
-//        if (appUser.equals(contact)) {
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-//        }
-//
-//        ContactId toDeleteContactId = new ContactId(appUser.getUserId(), contact.getUserId());
-//
-//        if (!contactRepository.existsById(toDeleteContactId)) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-//        }
-//
-//        contactRepository.deleteById(toDeleteContactId);
-//        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();  // 204 cuando se elimina correctamente sin cuerpo
-//    }
-//}
