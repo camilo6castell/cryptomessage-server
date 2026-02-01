@@ -1,8 +1,10 @@
 package com.cryptomessage.server.services;
 
+import com.cryptomessage.server.config.exceptions.ForbiddenException;
 import com.cryptomessage.server.model.dto.message.SendMessageRequest;
 import com.cryptomessage.server.model.dto.message.MessageResponse;
 import com.cryptomessage.server.model.entity.chat.Chat;
+import com.cryptomessage.server.model.entity.chat.ChatStatus;
 import com.cryptomessage.server.model.entity.message.Message;
 import com.cryptomessage.server.model.entity.user.AppUser;
 import com.cryptomessage.server.model.mapper.MessageMapper;
@@ -34,13 +36,33 @@ public class MessageService {
         this.messageMapper = messageMapper;
     }
 
+    private void validateMessagePermission(Chat chat, AppUser sender) {
+
+        if (chat.getStatus() == ChatStatus.BLOCKED) {
+            throw new ForbiddenException("Chat blocked");
+        }
+
+        if (chat.getStatus() == ChatStatus.PENDING) {
+
+            if (!chat.getInitiatedBy().equals(sender)) {
+                throw new ForbiddenException("Chat not accepted yet");
+            }
+
+            if (chat.hasMessageFrom(sender)) {
+                throw new ForbiddenException(
+                        "Only one message allowed until accepted"
+                );
+            }
+        }
+    }
+
     /* ================= SEND MESSAGE ================= */
 
     @Transactional
     public MessageResponse sendMessage(
             String bearerToken,
             SendMessageRequest request
-    ) throws Exception {
+    ) {
 
         AppUser sender = cryptoService.resolveUserFromToken(bearerToken);
 
@@ -48,6 +70,7 @@ public class MessageService {
                 .orElseThrow(() -> new NoSuchElementException("Chat not found"));
 
         chat.assertUserIsParticipant(sender.getUserId());
+        validateMessagePermission(chat, sender);
 
         Map<Long, String> encryptedContent =
                 Map.copyOf(request.getEncryptedContentByUser());
@@ -88,5 +111,17 @@ public class MessageService {
                 )
                 .toList();
     }
+
+    @Transactional
+    public void markChatAsRead(String bearerToken, Long chatId) {
+        AppUser user = cryptoService.resolveUserFromToken(bearerToken);
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow();
+
+        chat.assertUserIsParticipant(user.getUserId());
+
+        messageRepository.markAsReadByChatAndNotSender(chat, user);
+    }
+
 }
 

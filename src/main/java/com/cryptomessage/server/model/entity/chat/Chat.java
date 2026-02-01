@@ -34,8 +34,11 @@ public class Chat {
     @JoinColumn(name = "user2_id", nullable = false)
     private AppUser appUser2;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Enumerated(EnumType.STRING)
+    private ChatStatus status;
+
+    @ManyToOne
+    private AppUser initiatedBy;
 
     @OneToMany(
             mappedBy = "chat",
@@ -44,11 +47,15 @@ public class Chat {
     )
     private final Set<Message> messages = new HashSet<>();
 
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+
     protected Chat() {
         // JPA
     }
 
-    public Chat(AppUser a, AppUser b) {
+    public Chat(AppUser a, AppUser b, AppUser initiatedBy) {
         if (a == null || b == null) {
             throw new IllegalArgumentException("Users cannot be null");
         }
@@ -56,7 +63,6 @@ public class Chat {
             throw new IllegalArgumentException("Cannot create chat with the same user");
         }
 
-        // 🔑 Orden canónico e inmutable (fundamental para evitar duplicados)
         if (a.getUserId() < b.getUserId()) {
             this.appUser1 = a;
             this.appUser2 = b;
@@ -64,7 +70,11 @@ public class Chat {
             this.appUser1 = b;
             this.appUser2 = a;
         }
+
+        this.status = ChatStatus.PENDING;
+        this.initiatedBy = initiatedBy;
     }
+
 
     @PrePersist
     protected void onCreate() {
@@ -133,6 +143,27 @@ public class Chat {
         return Collections.unmodifiableSet(messages);
     }
 
+    public ChatStatus getStatus() {
+        return status;
+    }
+
+    public AppUser getInitiatedBy() {
+        return initiatedBy;
+    }
+
+    // ===== Setters =====
+
+    public void accept() {
+        if (this.status != ChatStatus.PENDING) {
+            throw new IllegalStateException("Chat cannot be accepted");
+        }
+        this.status = ChatStatus.ACCEPTED;
+    }
+
+    public void block() {
+        this.status = ChatStatus.BLOCKED;
+    }
+
     // ===== Helpers =====
 
     public void assertUserIsParticipant(Long userId) {
@@ -140,5 +171,10 @@ public class Chat {
                 && !appUser2.getUserId().equals(userId)) {
             throw new IllegalArgumentException("User not part of this chat");
         }
+    }
+
+    public boolean hasMessageFrom(AppUser user) {
+        return messages.stream()
+                .anyMatch(m -> m.getSender().equals(user));
     }
 }

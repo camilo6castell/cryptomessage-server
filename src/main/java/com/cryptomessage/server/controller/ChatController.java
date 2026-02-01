@@ -2,6 +2,7 @@ package com.cryptomessage.server.controller;
 
 import com.cryptomessage.server.model.dto.chat.ChatResponse;
 import com.cryptomessage.server.model.dto.chat.CreateChatRequest;
+import com.cryptomessage.server.model.entity.chat.ChatStatus;
 import com.cryptomessage.server.services.ChatService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -24,29 +25,46 @@ public class ChatController {
 
     @PostMapping
     public ResponseEntity<ChatResponse> createChat(
-            @RequestBody CreateChatRequest request,
-            HttpServletRequest httpRequest
+            @RequestHeader("Authorization") String bearerToken,
+            @RequestBody CreateChatRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(
-                        chatService.createChat(
-                                httpRequest.getHeader("Authorization"),
-                                request.getContactId()
-                        )
-                );
+                .body(chatService.createChat(bearerToken, request.getUsername()));
     }
 
     /* ================= LIST CHATS ================= */
 
     @GetMapping
     public ResponseEntity<List<ChatResponse>> getMyChats(
-            HttpServletRequest request
+            @RequestHeader("Authorization") String bearerToken,
+            @RequestParam(required = false) ChatStatus status
     ) {
         return ResponseEntity.ok(
-                chatService.getMyChats(
-                        request.getHeader("Authorization")
-                )
+                chatService.getMyChats(bearerToken, status)
         );
     }
+
+    /* ================= ACCEPT CHAT ================= */
+
+    @PostMapping("/{chatId}/accept")
+    public ResponseEntity<Void> acceptChat(
+            @RequestHeader("Authorization") String bearerToken,
+            @PathVariable Long chatId
+    ) {
+        chatService.acceptChat(bearerToken, chatId);
+        return ResponseEntity.ok().build();
+    }
+
+    /* ================= BLOCK CHAT ================= */
+
+    @PostMapping("/{chatId}/block")
+    public ResponseEntity<Void> blockChat(
+            @RequestHeader("Authorization") String bearerToken,
+            @PathVariable Long chatId
+    ) {
+        chatService.blockChat(bearerToken, chatId);
+        return ResponseEntity.ok().build();
+    }
 }
+
 
