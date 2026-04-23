@@ -3,6 +3,8 @@ package com.cryptomessage.server.services;
 import com.cryptomessage.server.model.entity.user.AppUser;
 import com.cryptomessage.server.repositories.UserRepository;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
 @Service
@@ -24,7 +26,12 @@ public class CryptoService {
         String token = jwtService.stripBearer(bearerToken);
         String username = jwtService.extractUsername(token);
 
-        return userRepository.findUserByUsername(username)
+        AppUser user = userRepository.findUserByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        // 🔥 AQUÍ
+        user.setLastSeen(LocalDateTime.now());
+
+        return user;
     }
 }

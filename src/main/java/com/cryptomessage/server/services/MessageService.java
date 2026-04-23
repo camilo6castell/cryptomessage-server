@@ -38,10 +38,6 @@ public class MessageService {
 
     private void validateMessagePermission(Chat chat, AppUser sender) {
 
-        if (chat.getStatus() == ChatStatus.BLOCKED) {
-            throw new ForbiddenException("Chat blocked");
-        }
-
         if (chat.getStatus() == ChatStatus.PENDING) {
 
             if (!chat.getInitiatedBy().equals(sender)) {

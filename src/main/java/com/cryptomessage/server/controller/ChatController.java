@@ -54,17 +54,6 @@ public class ChatController {
         chatService.acceptChat(bearerToken, chatId);
         return ResponseEntity.ok().build();
     }
-
-    /* ================= BLOCK CHAT ================= */
-
-    @PostMapping("/{chatId}/block")
-    public ResponseEntity<Void> blockChat(
-            @RequestHeader("Authorization") String bearerToken,
-            @PathVariable Long chatId
-    ) {
-        chatService.blockChat(bearerToken, chatId);
-        return ResponseEntity.ok().build();
-    }
 }
 
 

@@ -9,7 +9,12 @@ import java.util.Map;
 import java.util.Set;
 
 @Entity
-@Table(name = "messages")
+@Table(
+        name = "messages",
+        indexes = {
+                @Index(name = "idx_messages_sent_at", columnList = "sent_at")
+        }
+)
 public class Message {
 
     @Id
@@ -51,10 +56,6 @@ public class Message {
         chat.assertUserIsParticipant(sender.getUserId());
 
         Set<Long> participantIds = chat.getParticipantIds();
-        if (participantIds.size() != 2) {
-            throw new IllegalStateException("Only 1–1 chats are supported");
-        }
-
         if (!encryptedContentByUser.keySet().equals(participantIds)) {
             throw new IllegalArgumentException(
                     "Encrypted content must exist for both chat participants"
@@ -65,8 +66,6 @@ public class Message {
         this.sender = sender;
         this.contentByUser = Map.copyOf(encryptedContentByUser);
         this.isRead = false;
-
-        // 🔥 SOLUCIÓN CLAVE
         this.sentAt = LocalDateTime.now();
     }
 

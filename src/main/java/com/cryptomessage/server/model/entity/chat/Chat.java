@@ -13,10 +13,10 @@ import java.util.Set;
 @Table(
         name = "chats",
         uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_chats_users",
-                        columnNames = {"user1_id", "user2_id"}
-                )
+                @UniqueConstraint(name = "uk_chats_users", columnNames = {"user1_id", "user2_id"})
+        },
+        indexes = {
+                @Index(name = "idx_chats_created_at", columnList = "created_at")
         }
 )
 public class Chat {
@@ -158,10 +158,6 @@ public class Chat {
             throw new IllegalStateException("Chat cannot be accepted");
         }
         this.status = ChatStatus.ACCEPTED;
-    }
-
-    public void block() {
-        this.status = ChatStatus.BLOCKED;
     }
 
     // ===== Helpers =====

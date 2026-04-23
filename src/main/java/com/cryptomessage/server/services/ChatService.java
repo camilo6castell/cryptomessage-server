@@ -91,19 +91,6 @@ public class ChatService {
         createContactIfNotExists(user2, user1);
     }
 
-    @Transactional
-    public void blockChat(String bearerToken, Long chatId) {
-
-        AppUser user = resolveUserFromToken(bearerToken);
-
-        Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> new NoSuchElementException("Chat not found"));
-
-        chat.assertUserIsParticipant(user.getUserId());
-
-        chat.block();
-    }
-
     /* ================= LIST CHATS ================= */
 
     @Transactional(readOnly = true)

@@ -14,10 +14,10 @@ import java.util.Set;
 @Table(
         name = "users",
         uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_users_username",
-                        columnNames = "username"
-                )
+                @UniqueConstraint(name = "uk_users_username", columnNames = "username")
+        },
+        indexes = {
+                @Index(name = "idx_users_last_seen", columnList = "last_seen")
         }
 )
 public class AppUser {
@@ -42,6 +42,9 @@ public class AppUser {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "last_seen", nullable = false)
+    private LocalDateTime lastSeen;
 
     // ===== RELATIONS =====
 
@@ -78,6 +81,7 @@ public class AppUser {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        this.lastSeen = LocalDateTime.now(); // 🔥 IMPORTANTE
     }
 
     // ===== BUILDER =====
@@ -177,5 +181,13 @@ public class AppUser {
 
     public Set<Chat> getReceivedChats() {
         return Collections.unmodifiableSet(receivedChats);
+    }
+
+    public LocalDateTime getLastSeen() {
+        return lastSeen;
+    }
+
+    public void setLastSeen(LocalDateTime lastSeen) {
+        this.lastSeen = lastSeen;
     }
 }
