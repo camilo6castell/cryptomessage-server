@@ -5,9 +5,12 @@ import com.cryptomessage.server.config.exceptions.ForbiddenException;
 import com.cryptomessage.server.model.dto.chat.ChatResponse;
 import com.cryptomessage.server.model.entity.chat.Chat;
 import com.cryptomessage.server.model.entity.chat.ChatStatus;
+import com.cryptomessage.server.model.entity.contact.Contact;
+import com.cryptomessage.server.model.entity.contact.ContactId;
 import com.cryptomessage.server.model.entity.user.AppUser;
 import com.cryptomessage.server.model.mapper.ChatMapper;
 import com.cryptomessage.server.repositories.ChatRepository;
+import com.cryptomessage.server.repositories.ContactRepository;
 import com.cryptomessage.server.repositories.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -24,17 +27,20 @@ public class ChatService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final ChatMapper chatMapper;
+    private final ContactRepository contactRepository;
 
     public ChatService(
             ChatRepository chatRepository,
             UserRepository userRepository,
             JwtService jwtService,
-            ChatMapper chatMapper
+            ChatMapper chatMapper,
+            ContactRepository contactRepository
     ) {
         this.chatRepository = chatRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.chatMapper = chatMapper;
+        this.contactRepository = contactRepository;
     }
 
     /* ================= CREATE CHAT ================= */
@@ -73,7 +79,16 @@ public class ChatService {
             throw new ForbiddenException("Initiator cannot accept their own chat");
         }
 
+        // 🔥 aceptar chat
         chat.accept();
+
+        // 🔥 obtener ambos usuarios
+        AppUser user1 = chat.getAppUser1();
+        AppUser user2 = chat.getAppUser2();
+
+        // 🔥 crear contactos bidireccionales
+        createContactIfNotExists(user1, user2);
+        createContactIfNotExists(user2, user1);
     }
 
     @Transactional
@@ -124,5 +139,15 @@ public class ChatService {
 
         return userRepository.findUserByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
+    }
+
+    private void createContactIfNotExists(AppUser owner, AppUser contactUser) {
+
+        ContactId id = new ContactId(owner.getUserId(), contactUser.getUserId());
+
+        if (!contactRepository.existsById(id)) {
+            Contact contact = new Contact(owner, contactUser);
+            contactRepository.save(contact);
+        }
     }
 }

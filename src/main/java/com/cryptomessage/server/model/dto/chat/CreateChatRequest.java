@@ -1,6 +1,6 @@
 package com.cryptomessage.server.model.dto.chat;
 
-public class CreateChatRequest {
+public final class CreateChatRequest {
 
     private String username;
 

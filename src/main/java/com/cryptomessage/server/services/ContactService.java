@@ -1,11 +1,14 @@
 package com.cryptomessage.server.services;
 
 import com.cryptomessage.server.config.exceptions.ConflictException;
+import com.cryptomessage.server.config.exceptions.ForbiddenException;
 import com.cryptomessage.server.model.dto.contact.ContactResponse;
+import com.cryptomessage.server.model.entity.chat.ChatStatus;
 import com.cryptomessage.server.model.entity.contact.Contact;
 import com.cryptomessage.server.model.entity.contact.ContactId;
 import com.cryptomessage.server.model.entity.user.AppUser;
 import com.cryptomessage.server.model.mapper.ContactMapper;
+import com.cryptomessage.server.repositories.ChatRepository;
 import com.cryptomessage.server.repositories.ContactRepository;
 import com.cryptomessage.server.repositories.UserRepository;
 
@@ -22,18 +25,24 @@ public class ContactService {
     private final UserRepository userRepository;
     private final ContactRepository contactRepository;
     private final JwtService jwtService;
+    private final RSAKeyConverterService RSAKeyConverterService;
     private final ContactMapper contactMapper;
+    private final ChatRepository chatRepository;
 
     public ContactService(
             UserRepository userRepository,
             ContactRepository contactRepository,
             JwtService jwtService,
-            ContactMapper contactMapper
+            ContactMapper contactMapper,
+            RSAKeyConverterService RSAKeyConverterService,
+            ChatRepository chatRepository
     ) {
         this.userRepository = userRepository;
         this.contactRepository = contactRepository;
         this.jwtService = jwtService;
         this.contactMapper = contactMapper;
+        this.RSAKeyConverterService = RSAKeyConverterService;
+        this.chatRepository = chatRepository;
     }
 
     /* ================= SEARCH USER ================= */
@@ -47,16 +56,14 @@ public class ContactService {
         return new ContactResponse(
                 user.getUserId(),
                 user.getUsername(),
-                contactMapper
-                        .toResponse(new Contact(null, user))
-                        .getPublicKey()
+                RSAKeyConverterService.publicKeyToString(user.getPublicKey())
         );
     }
 
     /* ================= LIST CONTACTS ================= */
 
     @Transactional(readOnly = true)
-    public List<ContactResponse> getMyContacts(String bearerToken) {
+    public List<ContactResponse> getContacts(String bearerToken) {
 
         AppUser owner = resolveUserFromToken(bearerToken);
 
@@ -76,6 +83,14 @@ public class ContactService {
 
         if (owner.getUserId().equals(contactUser.getUserId())) {
             throw new IllegalArgumentException("Cannot add yourself as contact");
+        }
+
+        boolean existsAcceptedChat =
+                chatRepository.existsByAppUser1AndAppUser2AndStatus(owner, contactUser, ChatStatus.ACCEPTED)
+                        || chatRepository.existsByAppUser2AndAppUser1AndStatus(owner, contactUser, ChatStatus.ACCEPTED);
+
+        if (!existsAcceptedChat) {
+            throw new ForbiddenException("Cannot add contact without accepted chat");
         }
 
         ContactId id = new ContactId(owner.getUserId(), contactUser.getUserId());

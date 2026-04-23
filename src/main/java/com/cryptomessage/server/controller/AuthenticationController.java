@@ -33,8 +33,8 @@ public class AuthenticationController {
     ) throws Exception {
 
         userRegistrationService.createUser(
-                request.getUsername(),
-                request.getPassphrase()
+                request.username(),
+                request.passphrase()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -49,8 +49,8 @@ public class AuthenticationController {
 
         return ResponseEntity.ok(
                 authenticationService.authenticate(
-                        request.getUsername(),
-                        request.getPassphrase()
+                        request.username(),
+                        request.passphrase()
                 )
         );
     }

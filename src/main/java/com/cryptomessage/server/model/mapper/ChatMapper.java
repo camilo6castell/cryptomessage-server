@@ -27,6 +27,7 @@ public class ChatMapper {
 
         return new ChatResponse(
                 chat.getChatId(),
+                chat.getInitiatedBy().getUserId(),
                 chat.getStatus(),
                 userMapper.toResponse(other),
                 createdAt

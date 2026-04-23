@@ -50,7 +50,6 @@ public class Message {
 
         chat.assertUserIsParticipant(sender.getUserId());
 
-        // 🔒 Validación fuerte: chat 1–1
         Set<Long> participantIds = chat.getParticipantIds();
         if (participantIds.size() != 2) {
             throw new IllegalStateException("Only 1–1 chats are supported");
@@ -66,6 +65,9 @@ public class Message {
         this.sender = sender;
         this.contentByUser = Map.copyOf(encryptedContentByUser);
         this.isRead = false;
+
+        // 🔥 SOLUCIÓN CLAVE
+        this.sentAt = LocalDateTime.now();
     }
 
     @PrePersist

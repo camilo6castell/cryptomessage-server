@@ -34,6 +34,7 @@ public class Contact implements Serializable {
     protected Contact() {}
 
     public Contact(AppUser appUser, AppUser contact) {
+        this.id = new ContactId(appUser.getUserId(), contact.getUserId());
         this.appUser = appUser;
         this.contact = contact;
     }

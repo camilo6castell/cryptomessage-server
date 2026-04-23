@@ -66,14 +66,14 @@ public class MessageService {
 
         AppUser sender = cryptoService.resolveUserFromToken(bearerToken);
 
-        Chat chat = chatRepository.findById(request.getChatId())
+        Chat chat = chatRepository.findById(request.chatId())
                 .orElseThrow(() -> new NoSuchElementException("Chat not found"));
 
         chat.assertUserIsParticipant(sender.getUserId());
         validateMessagePermission(chat, sender);
 
         Map<Long, String> encryptedContent =
-                Map.copyOf(request.getEncryptedContentByUser());
+                Map.copyOf(request.encryptedContentByUser());
 
         Message message = new Message(chat, sender, encryptedContent);
 

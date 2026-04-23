@@ -51,7 +51,7 @@ public class AppUser {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    private Set<Chat> initiatedChats = new HashSet<>();
+    private final Set<Chat> initiatedChats = new HashSet<>();
 
     @OneToMany(
             mappedBy = "appUser2",
@@ -59,7 +59,7 @@ public class AppUser {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    private Set<Chat> receivedChats = new HashSet<>();
+    private final Set<Chat> receivedChats = new HashSet<>();
 
     @OneToMany(
             mappedBy = "appUser",
@@ -67,7 +67,7 @@ public class AppUser {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    private Set<Contact> contacts = new HashSet<>();
+    private final Set<Contact> contacts = new HashSet<>();
 
     // ===== JPA =====
 

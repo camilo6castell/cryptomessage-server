@@ -21,5 +21,16 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
             AppUser appUser2,
             ChatStatus status
     );
+    boolean existsByAppUser1AndAppUser2AndStatus(
+            AppUser appUser1,
+            AppUser appUser2,
+            ChatStatus status
+    );
+
+    boolean existsByAppUser2AndAppUser1AndStatus(
+            AppUser appUser1,
+            AppUser appUser2,
+            ChatStatus status
+    );
 
 }

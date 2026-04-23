@@ -22,7 +22,8 @@ public class UserMapper {
                 user.getUserId(),
                 user.getUsername(),
                 user.getCreatedAt().toInstant(ZoneOffset.UTC),
-                rsaKeyConverter.publicKeyToString(user.getPublicKey())
+                rsaKeyConverter.publicKeyToString(user.getPublicKey()),
+                user.getEncryptedPrivateKey()
         );
     }
 }

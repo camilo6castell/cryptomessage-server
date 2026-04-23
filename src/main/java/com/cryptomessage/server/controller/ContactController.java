@@ -28,7 +28,7 @@ public class ContactController {
             @RequestBody SearchContactRequest request
     ) {
         return ResponseEntity.ok(
-                contactService.searchUserByUsername(request.getUsername())
+                contactService.searchUserByUsername(request.username())
         );
     }
 
@@ -39,7 +39,7 @@ public class ContactController {
             HttpServletRequest request
     ) {
         return ResponseEntity.ok(
-                contactService.getMyContacts(
+                contactService.getContacts(
                         request.getHeader("Authorization")
                 )
         );
@@ -54,7 +54,7 @@ public class ContactController {
     ) {
         contactService.addContact(
                 httpRequest.getHeader("Authorization"),
-                request.getContactId()
+                request.contactId()
         );
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

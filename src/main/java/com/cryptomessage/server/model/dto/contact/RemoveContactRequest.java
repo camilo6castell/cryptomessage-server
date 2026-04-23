@@ -1,15 +1,6 @@
 package com.cryptomessage.server.model.dto.contact;
 
-public final class RemoveContactRequest {
+public record RemoveContactRequest(Long contactId) {
 
-    private final Long contactId;
-
-    public RemoveContactRequest(Long contactId) {
-        this.contactId = contactId;
-    }
-
-    public Long getContactId() {
-        return contactId;
-    }
 }
 
