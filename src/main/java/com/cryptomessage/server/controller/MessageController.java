@@ -45,4 +45,13 @@ public class MessageController {
                 messageService.getMessagesByChat(bearerToken, chatId)
         );
     }
+
+    @PatchMapping("/chat/{chatId}/read")
+    public ResponseEntity<Void> markChatAsRead(
+            @RequestHeader("Authorization") String bearerToken,
+            @PathVariable Long chatId
+    ) {
+        messageService.markChatAsRead(bearerToken, chatId);
+        return ResponseEntity.noContent().build();
+    }
 }
