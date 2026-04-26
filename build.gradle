@@ -33,6 +33,9 @@ dependencies {
     // MARIADB — solo este driver, sacás los de MySQL
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.4.1'
 
+    // MYSQL
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
     // JWT
     implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
