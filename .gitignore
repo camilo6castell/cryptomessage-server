@@ -52,7 +52,7 @@ logs/
 # ========================================
 .env
 application-*.yml
-application-*.properties
+#application-*.properties
 
 # ========================================
 # Otros
