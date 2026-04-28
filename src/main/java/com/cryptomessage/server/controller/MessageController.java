@@ -23,12 +23,11 @@ public class MessageController {
 
     @PostMapping
     public ResponseEntity<MessageResponse> sendMessage(
-            @RequestHeader("Authorization") String bearerToken,
             @RequestBody SendMessageRequest request
     ) throws Exception {
 
         MessageResponse response =
-                messageService.sendMessage(bearerToken, request);
+                messageService.sendMessage(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -37,21 +36,19 @@ public class MessageController {
 
     @GetMapping("/chat/{chatId}")
     public ResponseEntity<List<MessageResponse>> getMessagesByChat(
-            @RequestHeader("Authorization") String bearerToken,
             @PathVariable Long chatId
     ) {
 
         return ResponseEntity.ok(
-                messageService.getMessagesByChat(bearerToken, chatId)
+                messageService.getMessagesByChat(chatId)
         );
     }
 
     @PatchMapping("/chat/{chatId}/read")
     public ResponseEntity<Void> markChatAsRead(
-            @RequestHeader("Authorization") String bearerToken,
             @PathVariable Long chatId
     ) {
-        messageService.markChatAsRead(bearerToken, chatId);
+        messageService.markChatAsRead(chatId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -19,7 +19,7 @@ import java.util.NoSuchElementException;
 @Service
 public class MessageService {
 
-    private final CryptoService cryptoService;
+    private final CurrentUserService currentUserService;
     private final MessageRepository messageRepository;
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
@@ -27,12 +27,12 @@ public class MessageService {
     public MessageService(
             MessageRepository messageRepository,
             ChatRepository chatRepository,
-            CryptoService cryptoService,
+            CurrentUserService currentUserService,
             MessageMapper messageMapper
     ) {
         this.messageRepository = messageRepository;
         this.chatRepository = chatRepository;
-        this.cryptoService = cryptoService;
+        this.currentUserService = currentUserService;
         this.messageMapper = messageMapper;
     }
 
@@ -56,11 +56,10 @@ public class MessageService {
 
     @Transactional
     public MessageResponse sendMessage(
-            String bearerToken,
             SendMessageRequest request
     ) {
 
-        AppUser sender = cryptoService.resolveUserFromToken(bearerToken);
+        AppUser sender = currentUserService.get();
 
         Chat chat = chatRepository.findById(request.chatId())
                 .orElseThrow(() -> new NoSuchElementException("Chat not found"));
@@ -86,11 +85,10 @@ public class MessageService {
 
     @Transactional(readOnly = true)
     public List<MessageResponse> getMessagesByChat(
-            String bearerToken,
             Long chatId
     ) {
 
-        AppUser user = cryptoService.resolveUserFromToken(bearerToken);
+        AppUser user = currentUserService.get();
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new NoSuchElementException("Chat not found"));
@@ -109,8 +107,8 @@ public class MessageService {
     }
 
     @Transactional
-    public void markChatAsRead(String bearerToken, Long chatId) {
-        AppUser user = cryptoService.resolveUserFromToken(bearerToken);
+    public void markChatAsRead(Long chatId) {
+        AppUser user = currentUserService.get();
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow();
 

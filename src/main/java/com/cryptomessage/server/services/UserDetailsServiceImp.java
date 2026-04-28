@@ -6,10 +6,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 public class UserDetailsServiceImp implements UserDetailsService {
@@ -27,7 +27,7 @@ public class UserDetailsServiceImp implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) {
         AppUser appUser = userRepository.findUserByUsername(username)
                 .orElseThrow(() ->
-                        new NoSuchElementException("User not found: " + username)
+                        new UsernameNotFoundException("User not found: " + username)
                 );
         return toUserDetails(appUser);
     }

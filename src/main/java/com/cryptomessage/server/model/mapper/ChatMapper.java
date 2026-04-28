@@ -11,12 +11,6 @@ import java.time.ZoneOffset;
 @Service
 public class ChatMapper {
 
-    private final UserMapper userMapper;
-
-    public ChatMapper(UserMapper userMapper) {
-        this.userMapper = userMapper;
-    }
-
     public ChatResponse toResponse(Chat chat, AppUser requester) {
 
         AppUser other = chat.getOtherParticipant(requester.getUserId());
@@ -24,12 +18,11 @@ public class ChatMapper {
                 ? chat.getCreatedAt().toInstant(ZoneOffset.UTC)
                 : null;
 
-
         return new ChatResponse(
                 chat.getChatId(),
                 chat.getInitiatedBy().getUserId(),
                 chat.getStatus(),
-                userMapper.toResponse(other),
+                ChatParticipantMapper.toResponse(other),
                 createdAt
         );
     }

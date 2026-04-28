@@ -24,25 +24,22 @@ public class ContactService {
 
     private final UserRepository userRepository;
     private final ContactRepository contactRepository;
-    private final JwtService jwtService;
-    private final RSAKeyConverterService RSAKeyConverterService;
     private final ContactMapper contactMapper;
     private final ChatRepository chatRepository;
+    private final CurrentUserService currentUserService;
 
     public ContactService(
             UserRepository userRepository,
             ContactRepository contactRepository,
-            JwtService jwtService,
             ContactMapper contactMapper,
-            RSAKeyConverterService RSAKeyConverterService,
-            ChatRepository chatRepository
+            ChatRepository chatRepository,
+            CurrentUserService currentUserService
     ) {
         this.userRepository = userRepository;
         this.contactRepository = contactRepository;
-        this.jwtService = jwtService;
         this.contactMapper = contactMapper;
-        this.RSAKeyConverterService = RSAKeyConverterService;
         this.chatRepository = chatRepository;
+        this.currentUserService = currentUserService;
     }
 
     /* ================= SEARCH USER ================= */
@@ -56,16 +53,16 @@ public class ContactService {
         return new ContactResponse(
                 user.getUserId(),
                 user.getUsername(),
-                RSAKeyConverterService.publicKeyToString(user.getPublicKey())
+                user.getPublicKey()
         );
     }
 
     /* ================= LIST CONTACTS ================= */
 
     @Transactional(readOnly = true)
-    public List<ContactResponse> getContacts(String bearerToken) {
+    public List<ContactResponse> getContacts() {
 
-        AppUser owner = resolveUserFromToken(bearerToken);
+        AppUser owner = currentUserService.get();
 
         return owner.getContacts().stream()
                 .map(contactMapper::toResponse)
@@ -74,9 +71,9 @@ public class ContactService {
 
     /* ================= ADD CONTACT ================= */
 
-    public void addContact(String bearerToken, Long contactId) {
+    public void addContact(Long contactId) {
 
-        AppUser owner = resolveUserFromToken(bearerToken);
+        AppUser owner = currentUserService.get();
 
         AppUser contactUser = userRepository.findById(contactId)
                 .orElseThrow(() -> new NoSuchElementException("Contact user not found"));
@@ -105,9 +102,9 @@ public class ContactService {
 
     /* ================= REMOVE CONTACT ================= */
 
-    public void removeContact(String bearerToken, Long contactId) {
+    public void removeContact(Long contactId) {
 
-        AppUser owner = resolveUserFromToken(bearerToken);
+        AppUser owner = currentUserService.get();
 
         ContactId id = new ContactId(owner.getUserId(), contactId);
 
@@ -115,16 +112,5 @@ public class ContactService {
                 .orElseThrow(() -> new NoSuchElementException("Contact not found"));
 
         contactRepository.delete(contact);
-    }
-
-    /* ================= INTERNAL ================= */
-
-    private AppUser resolveUserFromToken(String bearerToken) {
-
-        String token = jwtService.stripBearer(bearerToken);
-        String username = jwtService.extractUsername(token);
-
-        return userRepository.findUserByUsername(username)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
     }
 }

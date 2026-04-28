@@ -22,10 +22,11 @@ public class CorsConfig {
             configuration.setAllowedOrigins(List.of(allowedOrigin));
         } else {
             // fallback para desarrollo
-            configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+            configuration.setAllowedOriginPatterns(List.of("*"));
         }
 
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH","OPTIONS"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 

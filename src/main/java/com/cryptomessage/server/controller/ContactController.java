@@ -35,13 +35,9 @@ public class ContactController {
     /* ================= LIST CONTACTS ================= */
 
     @GetMapping
-    public ResponseEntity<List<ContactResponse>> getMyContacts(
-            HttpServletRequest request
-    ) {
+    public ResponseEntity<List<ContactResponse>> getMyContacts() {
         return ResponseEntity.ok(
-                contactService.getContacts(
-                        request.getHeader("Authorization")
-                )
+                contactService.getContacts()
         );
     }
 
@@ -49,27 +45,18 @@ public class ContactController {
 
     @PostMapping
     public ResponseEntity<Void> addContact(
-            @RequestBody AddContactRequest request,
-            HttpServletRequest httpRequest
+            @RequestBody AddContactRequest request
     ) {
-        contactService.addContact(
-                httpRequest.getHeader("Authorization"),
-                request.contactId()
-        );
+        contactService.addContact(request.contactId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
-
     /* ================= REMOVE CONTACT ================= */
 
     @DeleteMapping("/{contactId}")
     public ResponseEntity<Void> removeContact(
-            @PathVariable Long contactId,
-            HttpServletRequest request
+            @PathVariable Long contactId
     ) {
-        contactService.removeContact(
-                request.getHeader("Authorization"),
-                contactId
-        );
+        contactService.removeContact(contactId);
         return ResponseEntity.noContent().build();
     }
 }

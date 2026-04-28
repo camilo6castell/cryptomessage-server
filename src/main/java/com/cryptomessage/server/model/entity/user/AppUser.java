@@ -4,7 +4,6 @@ import com.cryptomessage.server.model.entity.chat.Chat;
 import com.cryptomessage.server.model.entity.contact.Contact;
 import jakarta.persistence.*;
 
-import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
@@ -36,9 +35,8 @@ public class AppUser {
     @Column(name = "encrypted_private_key", nullable = false, columnDefinition = "TEXT")
     private String encryptedPrivateKey;
 
-    @Convert(converter = PublicKeyConverter.class)
     @Column(name = "public_key", nullable = false, columnDefinition = "TEXT")
-    private PublicKey publicKey;
+    private String publicKey;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -102,7 +100,7 @@ public class AppUser {
         private String username;
         private String passphraseHash;
         private String encryptedPrivateKey;
-        private PublicKey publicKey;
+        private String publicKey;
 
         public Builder username(String username) {
             this.username = username;
@@ -119,7 +117,7 @@ public class AppUser {
             return this;
         }
 
-        public Builder publicKey(PublicKey publicKey) {
+        public Builder publicKey(String publicKey) {
             this.publicKey = publicKey;
             return this;
         }
@@ -163,7 +161,7 @@ public class AppUser {
         return encryptedPrivateKey;
     }
 
-    public PublicKey getPublicKey() {
+    public String getPublicKey() {
         return publicKey;
     }
 

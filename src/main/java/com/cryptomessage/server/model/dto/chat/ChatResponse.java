@@ -5,7 +5,11 @@ import com.cryptomessage.server.model.entity.chat.ChatStatus;
 
 import java.time.Instant;
 
-public record ChatResponse(Long chatId, Long initiatedBy, ChatStatus status, UserResponse participant, Instant createdAt) {
-
-}
+public record ChatResponse(
+        Long chatId,
+        Long initiatedBy,
+        ChatStatus status,
+        ChatParticipantResponse participant,
+        Instant createdAt
+) {}
 

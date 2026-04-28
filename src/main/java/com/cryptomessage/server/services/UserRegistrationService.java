@@ -12,40 +12,31 @@ import java.security.KeyPair;
 public class UserRegistrationService {
 
     private final UserRepository userRepository;
-    private final RSAKeyService rsaKeyService;
-    private final RSAEncryptionService rsaEncryptionService;
     private final PasswordEncoder passwordEncoder;
 
     public UserRegistrationService(
             UserRepository userRepository,
-            RSAKeyService rsaKeyService,
-            RSAEncryptionService rsaEncryptionService,
             PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
-        this.rsaKeyService = rsaKeyService;
-        this.rsaEncryptionService = rsaEncryptionService;
         this.passwordEncoder = passwordEncoder;
     }
 
-    public void createUser(String username, String passphrase) throws Exception {
+    public void createUser(
+            String username,
+            String passphrase,
+            String publicKey,
+            String encryptedPrivateKey
+    ) {
 
         if (userRepository.findUserByUsername(username).isPresent()) {
             throw new ConflictException("User already exists");
         }
 
-        KeyPair keyPair = rsaKeyService.generateKeyPair();
-
-        String encryptedPrivateKey =
-                rsaEncryptionService.encryptPrivateKey(
-                        keyPair.getPrivate(),
-                        passphrase
-                );
-
         AppUser user = AppUser.builder()
                 .username(username)
                 .passphraseHash(passwordEncoder.encode(passphrase))
-                .publicKey(keyPair.getPublic())
+                .publicKey(publicKey) // 🔥 ahora es String (base64)
                 .encryptedPrivateKey(encryptedPrivateKey)
                 .build();
 

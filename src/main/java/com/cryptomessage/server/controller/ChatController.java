@@ -25,22 +25,20 @@ public class ChatController {
 
     @PostMapping
     public ResponseEntity<ChatResponse> createChat(
-            @RequestHeader("Authorization") String bearerToken,
             @RequestBody CreateChatRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(chatService.createChat(bearerToken, request.getUsername()));
+                .body(chatService.createChat(request.getUsername()));
     }
 
     /* ================= LIST CHATS ================= */
 
     @GetMapping
     public ResponseEntity<List<ChatResponse>> getMyChats(
-            @RequestHeader("Authorization") String bearerToken,
             @RequestParam(required = false) ChatStatus status
     ) {
         return ResponseEntity.ok(
-                chatService.getMyChats(bearerToken, status)
+                chatService.getMyChats(status)
         );
     }
 
@@ -48,10 +46,9 @@ public class ChatController {
 
     @PostMapping("/{chatId}/accept")
     public ResponseEntity<Void> acceptChat(
-            @RequestHeader("Authorization") String bearerToken,
             @PathVariable Long chatId
     ) {
-        chatService.acceptChat(bearerToken, chatId);
+        chatService.acceptChat(chatId);
         return ResponseEntity.ok().build();
     }
 }

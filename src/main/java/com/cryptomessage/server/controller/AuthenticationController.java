@@ -1,8 +1,6 @@
 package com.cryptomessage.server.controller;
 
-import com.cryptomessage.server.model.dto.security.authentication.AuthenticationRequest;
-import com.cryptomessage.server.model.dto.security.authentication.AuthenticationResponse;
-import com.cryptomessage.server.model.dto.security.authentication.LoginResponse;
+import com.cryptomessage.server.model.dto.security.authentication.UserResponse;
 import com.cryptomessage.server.model.dto.security.register.RegisterRequest;
 import com.cryptomessage.server.services.AuthenticationService;
 import com.cryptomessage.server.services.UserRegistrationService;
@@ -31,22 +29,21 @@ public class AuthenticationController {
     public ResponseEntity<Void> register(
             @RequestBody RegisterRequest request
     ) throws Exception {
-
         userRegistrationService.createUser(
                 request.username(),
-                request.passphrase()
+                request.passphrase(),
+                request.publicKey(),
+                request.encryptedPrivateKey()
         );
-
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     /* ================= LOGIN ================= */
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
-            @RequestBody AuthenticationRequest request
+    public ResponseEntity<UserResponse> login(
+            @RequestBody RegisterRequest request
     ) throws Exception {
-
         return ResponseEntity.ok(
                 authenticationService.authenticate(
                         request.username(),
@@ -58,12 +55,10 @@ public class AuthenticationController {
     /* ================= TOKEN VERIFY ================= */
 
     @GetMapping("/verify")
-    public ResponseEntity<AuthenticationResponse> verifyToken(
-            @RequestHeader("Authorization") String bearerToken
+    public ResponseEntity<UserResponse> verifyToken(
     ) {
-
         return ResponseEntity.ok(
-                authenticationService.verifyToken(bearerToken)
+                authenticationService.verifyToken()
         );
     }
 }

@@ -25,20 +25,20 @@ public class ChatService {
 
     private final ChatRepository chatRepository;
     private final UserRepository userRepository;
-    private final JwtService jwtService;
+    private final CurrentUserService currentUserService;
     private final ChatMapper chatMapper;
     private final ContactRepository contactRepository;
 
     public ChatService(
             ChatRepository chatRepository,
             UserRepository userRepository,
-            JwtService jwtService,
+            CurrentUserService currentUserService,
             ChatMapper chatMapper,
             ContactRepository contactRepository
     ) {
         this.chatRepository = chatRepository;
         this.userRepository = userRepository;
-        this.jwtService = jwtService;
+        this.currentUserService = currentUserService;
         this.chatMapper = chatMapper;
         this.contactRepository = contactRepository;
     }
@@ -46,8 +46,8 @@ public class ChatService {
     /* ================= CREATE CHAT ================= */
 
     @Transactional
-    public ChatResponse createChat(String bearerToken, String username) {
-        AppUser owner = resolveUserFromToken(bearerToken);
+    public ChatResponse createChat(String username) {
+        AppUser owner = currentUserService.get();
         AppUser otherUser = userRepository.findUserByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
@@ -62,9 +62,9 @@ public class ChatService {
     }
 
     @Transactional
-    public void acceptChat(String bearerToken, Long chatId) {
+    public void acceptChat(Long chatId) {
 
-        AppUser user = resolveUserFromToken(bearerToken);
+        AppUser user = currentUserService.get();
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new NoSuchElementException("Chat not found"));
@@ -94,8 +94,8 @@ public class ChatService {
     /* ================= LIST CHATS ================= */
 
     @Transactional(readOnly = true)
-    public List<ChatResponse> getMyChats(String bearerToken, ChatStatus status) {
-        AppUser owner = resolveUserFromToken(bearerToken);
+    public List<ChatResponse> getMyChats(ChatStatus status) {
+        AppUser owner = currentUserService.get();
 
         List<Chat> chats = (status == null)
                 ? chatRepository.findByAppUser1OrAppUser2(owner, owner)
@@ -117,15 +117,6 @@ public class ChatService {
     private boolean chatExists(AppUser user1, AppUser user2) {
         return chatRepository.existsByAppUser1AndAppUser2(user1, user2)
                 || chatRepository.existsByAppUser1AndAppUser2(user2, user1);
-    }
-
-    private AppUser resolveUserFromToken(String bearerToken) {
-
-        String token = jwtService.stripBearer(bearerToken);
-        String username = jwtService.extractUsername(token);
-
-        return userRepository.findUserByUsername(username)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
     }
 
     private void createContactIfNotExists(AppUser owner, AppUser contactUser) {
