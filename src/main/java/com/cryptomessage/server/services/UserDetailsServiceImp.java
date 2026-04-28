@@ -32,9 +32,9 @@ public class UserDetailsServiceImp implements UserDetailsService {
         return toUserDetails(appUser);
     }
 
-    public UserDetails loadUserByAppUser(AppUser appUser) {
+/*    public UserDetails loadUserByAppUser(AppUser appUser) {
         return toUserDetails(appUser);
-    }
+    }*/
 
     private UserDetails toUserDetails(AppUser appUser) {
         return new User(
