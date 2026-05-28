@@ -1,5 +1,6 @@
 package com.cryptomessage.server.controller;
 
+import com.cryptomessage.server.model.dto.security.authentication.AuthenticationRequest;
 import com.cryptomessage.server.model.dto.security.authentication.UserResponse;
 import com.cryptomessage.server.model.dto.security.register.RegisterRequest;
 import com.cryptomessage.server.services.AuthenticationService;
@@ -28,7 +29,7 @@ public class AuthenticationController {
     @PostMapping("/register")
     public ResponseEntity<Void> register(
             @RequestBody RegisterRequest request
-    ) throws Exception {
+    ) {
         userRegistrationService.createUser(
                 request.username(),
                 request.passphrase(),
@@ -42,8 +43,8 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity<UserResponse> login(
-            @RequestBody RegisterRequest request
-    ) throws Exception {
+            @RequestBody AuthenticationRequest request
+    ) {
         return ResponseEntity.ok(
                 authenticationService.authenticate(
                         request.username(),

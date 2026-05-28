@@ -41,15 +41,6 @@ public class ContactController {
         );
     }
 
-    /* ================= ADD CONTACT ================= */
-
-    @PostMapping
-    public ResponseEntity<Void> addContact(
-            @RequestBody AddContactRequest request
-    ) {
-        contactService.addContact(request.contactId());
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
     /* ================= REMOVE CONTACT ================= */
 
     @DeleteMapping("/{contactId}")

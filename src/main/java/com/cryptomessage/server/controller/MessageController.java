@@ -24,7 +24,7 @@ public class MessageController {
     @PostMapping
     public ResponseEntity<MessageResponse> sendMessage(
             @RequestBody SendMessageRequest request
-    ) throws Exception {
+    ) {
 
         MessageResponse response =
                 messageService.sendMessage(request);

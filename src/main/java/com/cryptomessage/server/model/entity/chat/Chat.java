@@ -37,7 +37,7 @@ public class Chat {
     @Enumerated(EnumType.STRING)
     private ChatStatus status;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private AppUser initiatedBy;
 
     @OneToMany(

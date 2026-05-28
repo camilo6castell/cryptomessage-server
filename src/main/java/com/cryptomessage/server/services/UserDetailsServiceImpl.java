@@ -12,14 +12,14 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class UserDetailsServiceImp implements UserDetailsService {
+public class UserDetailsServiceImpl implements UserDetailsService {
 
     private static final List<GrantedAuthority> DEFAULT_AUTHORITIES =
             List.of((GrantedAuthority) () -> "USER");
 
     private final UserRepository userRepository;
 
-    public UserDetailsServiceImp(UserRepository userRepository) {
+    public UserDetailsServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 

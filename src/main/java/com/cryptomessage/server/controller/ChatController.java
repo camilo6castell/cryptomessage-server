@@ -28,7 +28,7 @@ public class ChatController {
             @RequestBody CreateChatRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(chatService.createChat(request.getUsername()));
+                .body(chatService.createChat(request.username()));
     }
 
     /* ================= LIST CHATS ================= */

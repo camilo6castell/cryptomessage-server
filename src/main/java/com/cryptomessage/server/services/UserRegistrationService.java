@@ -3,6 +3,7 @@ package com.cryptomessage.server.services;
 import com.cryptomessage.server.config.exceptions.ConflictException;
 import com.cryptomessage.server.model.entity.user.AppUser;
 import com.cryptomessage.server.repositories.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,10 +30,6 @@ public class UserRegistrationService {
             String encryptedPrivateKey
     ) {
 
-        if (userRepository.findUserByUsername(username).isPresent()) {
-            throw new ConflictException("User already exists");
-        }
-
         AppUser user = AppUser.builder()
                 .username(username)
                 .passphraseHash(passwordEncoder.encode(passphrase))
@@ -40,7 +37,11 @@ public class UserRegistrationService {
                 .encryptedPrivateKey(encryptedPrivateKey)
                 .build();
 
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("User already exists");
+        }
     }
 }
 

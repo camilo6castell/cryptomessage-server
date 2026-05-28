@@ -1,7 +1,7 @@
 package com.cryptomessage.server.config.security;
 
 import com.cryptomessage.server.services.JwtService;
-import com.cryptomessage.server.services.UserDetailsServiceImp;
+import com.cryptomessage.server.services.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,11 +20,11 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserDetailsServiceImp userDetailsService;
+    private final UserDetailsServiceImpl userDetailsService;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            UserDetailsServiceImp userDetailsService
+            UserDetailsServiceImpl userDetailsService
     ) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
