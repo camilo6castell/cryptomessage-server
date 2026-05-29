@@ -41,6 +41,8 @@ public class AuthenticationController {
 
     /* ================= LOGIN ================= */
 
+    // FIX: login usaba RegisterRequest (que incluye publicKey y encryptedPrivateKey
+    // innecesarios). Ahora usa AuthenticationRequest, que ya existía pero no se usaba.
     @PostMapping("/login")
     public ResponseEntity<UserResponse> login(
             @RequestBody AuthenticationRequest request
@@ -56,8 +58,7 @@ public class AuthenticationController {
     /* ================= TOKEN VERIFY ================= */
 
     @GetMapping("/verify")
-    public ResponseEntity<UserResponse> verifyToken(
-    ) {
+    public ResponseEntity<UserResponse> verifyToken() {
         return ResponseEntity.ok(
                 authenticationService.verifyToken()
         );

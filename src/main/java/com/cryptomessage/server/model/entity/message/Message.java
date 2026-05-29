@@ -66,7 +66,7 @@ public class Message {
         this.sender = sender;
         this.contentByUser = Map.copyOf(encryptedContentByUser);
         this.isRead = false;
-        this.sentAt = LocalDateTime.now();
+        // sentAt is set by @PrePersist before insert
     }
 
     @PrePersist

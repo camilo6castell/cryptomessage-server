@@ -5,7 +5,7 @@ import com.cryptomessage.server.repositories.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Scheduled;
 import com.cryptomessage.server.repositories.MessageRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service

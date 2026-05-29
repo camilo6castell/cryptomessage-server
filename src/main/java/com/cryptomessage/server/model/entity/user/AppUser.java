@@ -185,6 +185,16 @@ public class AppUser {
         return lastSeen;
     }
 
+    /**
+     * Called on every authenticated action to keep the account active.
+     * Prevents the inactivity scheduler from deleting active users.
+     */
+    public void recordActivity() {
+        this.lastSeen = LocalDateTime.now();
+    }
+
+    /** @deprecated Use {@link #recordActivity()} for domain clarity. */
+    @Deprecated
     public void setLastSeen(LocalDateTime lastSeen) {
         this.lastSeen = lastSeen;
     }

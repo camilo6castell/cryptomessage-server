@@ -4,8 +4,6 @@ import com.cryptomessage.server.config.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,16 +19,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity httpSecurity,
-            AuthenticationProvider authenticationProvider,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            CorsConfigurationSource corsConfigurationSource // 👈 INYECTAR
+            CorsConfigurationSource corsConfigurationSource
     ) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // 🔥 ESTE ES EL FIX REAL
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
@@ -39,7 +33,9 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authenticationProvider(authenticationProvider)
+                // El DaoAuthenticationProvider lo configura Spring Boot automáticamente
+                // al detectar los beans UserDetailsService + PasswordEncoder en el contexto.
+                // No es necesario — ni correcto — registrarlo manualmente aquí.
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

@@ -4,7 +4,6 @@ import com.cryptomessage.server.model.dto.chat.ChatResponse;
 import com.cryptomessage.server.model.dto.chat.CreateChatRequest;
 import com.cryptomessage.server.model.entity.chat.ChatStatus;
 import com.cryptomessage.server.services.ChatService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

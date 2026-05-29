@@ -1,4 +1,4 @@
-package com.cryptomessage.server.config.swagger;
+package com.cryptomessage.server.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

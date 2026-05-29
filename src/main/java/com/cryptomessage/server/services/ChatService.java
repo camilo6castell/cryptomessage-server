@@ -45,13 +45,14 @@ public class ChatService {
 
     /* ================= CREATE CHAT ================= */
 
-    @Transactional
     public ChatResponse createChat(String username) {
         AppUser owner = currentUserService.get();
         AppUser otherUser = userRepository.findUserByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
-        validateNotSelfChat(owner, otherUser);
+        if (owner.getUserId().equals(otherUser.getUserId())) {
+            throw new ConflictException("Cannot create chat with yourself");
+        }
 
         try {
             Chat chat = chatRepository.save(new Chat(owner, otherUser, owner));
@@ -61,9 +62,9 @@ public class ChatService {
         }
     }
 
-    @Transactional
-    public void acceptChat(Long chatId) {
+    /* ================= ACCEPT CHAT ================= */
 
+    public void acceptChat(Long chatId) {
         AppUser user = currentUserService.get();
 
         Chat chat = chatRepository.findById(chatId)
@@ -75,18 +76,15 @@ public class ChatService {
             throw new ConflictException("Chat is not pending");
         }
 
-        if (chat.getInitiatedBy().equals(user)) {
+        if (chat.getInitiatedBy().getUserId().equals(user.getUserId())) {
             throw new ForbiddenException("Initiator cannot accept their own chat");
         }
 
-        // 🔥 aceptar chat
         chat.accept();
 
-        // 🔥 obtener ambos usuarios
         AppUser user1 = chat.getAppUser1();
         AppUser user2 = chat.getAppUser2();
 
-        // 🔥 crear contactos bidireccionales
         createContactIfNotExists(user1, user2);
         createContactIfNotExists(user2, user1);
     }
@@ -99,7 +97,7 @@ public class ChatService {
 
         List<Chat> chats = (status == null)
                 ? chatRepository.findByAppUser1OrAppUser2(owner, owner)
-                : chatRepository.findByAppUser1OrAppUser2AndStatus(owner, owner, status);
+                : chatRepository.findByUserAndStatus(owner, status);
 
         return chats.stream()
                 .map(chat -> chatMapper.toResponse(chat, owner))
@@ -108,24 +106,10 @@ public class ChatService {
 
     /* ================= INTERNAL ================= */
 
-    private void validateNotSelfChat(AppUser user1, AppUser user2) {
-        if (user1.equals(user2)) {
-            throw new ConflictException("Cannot create chat with yourself");
-        }
-    }
-
-    private boolean chatExists(AppUser user1, AppUser user2) {
-        return chatRepository.existsByAppUser1AndAppUser2(user1, user2)
-                || chatRepository.existsByAppUser1AndAppUser2(user2, user1);
-    }
-
     private void createContactIfNotExists(AppUser owner, AppUser contactUser) {
-
         ContactId id = new ContactId(owner.getUserId(), contactUser.getUserId());
-
         if (!contactRepository.existsById(id)) {
-            Contact contact = new Contact(owner, contactUser);
-            contactRepository.save(contact);
+            contactRepository.save(new Contact(owner, contactUser));
         }
     }
 }

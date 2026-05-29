@@ -4,7 +4,6 @@ import com.cryptomessage.server.model.dto.contact.AddContactRequest;
 import com.cryptomessage.server.model.dto.contact.ContactResponse;
 import com.cryptomessage.server.model.dto.contact.SearchContactRequest;
 import com.cryptomessage.server.services.ContactService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +40,15 @@ public class ContactController {
         );
     }
 
+    /* ================= ADD CONTACT ================= */
+
+    @PostMapping
+    public ResponseEntity<Void> addContact(
+            @RequestBody AddContactRequest request
+    ) {
+        contactService.addContact(request.contactId());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
     /* ================= REMOVE CONTACT ================= */
 
     @DeleteMapping("/{contactId}")

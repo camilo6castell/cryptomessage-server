@@ -1,5 +1,5 @@
 # Imagen base para compilar
-FROM gradle:8.5.0-jdk17 AS build
+FROM gradle:8.14.4-jdk17 AS build
 WORKDIR /app
 COPY . .
 RUN gradle build -x test

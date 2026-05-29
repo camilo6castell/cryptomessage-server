@@ -9,8 +9,10 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<AppUser, Long> {
+
     Optional<AppUser> findUserByUsername(String username);
-    Optional<AppUser> findUserByUserId (Long id);
+
+    // findById(Long) is already provided by JpaRepository — no need to redeclare it
 
     @Modifying
     @Query("DELETE FROM AppUser u WHERE u.lastSeen < :limit")

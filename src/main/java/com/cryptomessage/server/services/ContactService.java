@@ -46,7 +46,6 @@ public class ContactService {
 
     @Transactional(readOnly = true)
     public ContactResponse searchUserByUsername(String username) {
-
         AppUser user = userRepository.findUserByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
@@ -61,9 +60,7 @@ public class ContactService {
 
     @Transactional(readOnly = true)
     public List<ContactResponse> getContacts() {
-
         AppUser owner = currentUserService.get();
-
         return owner.getContacts().stream()
                 .map(contactMapper::toResponse)
                 .toList();
@@ -72,7 +69,6 @@ public class ContactService {
     /* ================= ADD CONTACT ================= */
 
     public void addContact(Long contactId) {
-
         AppUser owner = currentUserService.get();
 
         AppUser contactUser = userRepository.findById(contactId)
@@ -82,9 +78,9 @@ public class ContactService {
             throw new IllegalArgumentException("Cannot add yourself as contact");
         }
 
+        // Uses the corrected query that properly groups OR before AND
         boolean existsAcceptedChat =
-                chatRepository.existsByAppUser1AndAppUser2AndStatus(owner, contactUser, ChatStatus.ACCEPTED)
-                        || chatRepository.existsByAppUser2AndAppUser1AndStatus(owner, contactUser, ChatStatus.ACCEPTED);
+                chatRepository.existsByUsersAndStatus(owner, contactUser, ChatStatus.ACCEPTED);
 
         if (!existsAcceptedChat) {
             throw new ForbiddenException("Cannot add contact without accepted chat");
@@ -96,14 +92,12 @@ public class ContactService {
             throw new ConflictException("Contact already exists");
         }
 
-        Contact contact = new Contact(owner, contactUser);
-        contactRepository.save(contact);
+        contactRepository.save(new Contact(owner, contactUser));
     }
 
     /* ================= REMOVE CONTACT ================= */
 
     public void removeContact(Long contactId) {
-
         AppUser owner = currentUserService.get();
 
         ContactId id = new ContactId(owner.getUserId(), contactId);

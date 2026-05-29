@@ -39,6 +39,9 @@ public class AuthenticationService {
         AppUser user = userRepository.findUserByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        user.recordActivity();
+        userRepository.save(user);
+
         String token = jwtService.generateToken(user);
 
         return userMapper.toResponse(user, token);

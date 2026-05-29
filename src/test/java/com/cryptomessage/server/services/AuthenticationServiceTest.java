@@ -40,7 +40,7 @@
 //    private AuthenticationManager authenticationManager;
 //
 //    @Mock
-//    private UserDetailsServiceImp userDetailsServiceImp;
+//    private UserDetailsServiceImpl userDetailsServiceImp;
 //
 //    @InjectMocks
 //    private AuthenticationService authenticationService;
