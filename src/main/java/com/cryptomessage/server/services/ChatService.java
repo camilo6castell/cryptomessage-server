@@ -13,6 +13,7 @@ import com.cryptomessage.server.repositories.ChatRepository;
 import com.cryptomessage.server.repositories.ContactRepository;
 import com.cryptomessage.server.repositories.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,19 +29,22 @@ public class ChatService {
     private final CurrentUserService currentUserService;
     private final ChatMapper chatMapper;
     private final ContactRepository contactRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ChatService(
             ChatRepository chatRepository,
             UserRepository userRepository,
             CurrentUserService currentUserService,
             ChatMapper chatMapper,
-            ContactRepository contactRepository
+            ContactRepository contactRepository,
+            SimpMessagingTemplate messagingTemplate
     ) {
         this.chatRepository = chatRepository;
         this.userRepository = userRepository;
         this.currentUserService = currentUserService;
         this.chatMapper = chatMapper;
         this.contactRepository = contactRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     /* ================= CREATE CHAT ================= */
@@ -56,6 +60,12 @@ public class ChatService {
 
         try {
             Chat chat = chatRepository.save(new Chat(owner, otherUser, owner));
+
+            messagingTemplate.convertAndSendToUser(
+                    otherUser.getUsername(), "/queue/chats",
+                    chatMapper.toResponse(chat, otherUser)
+            );
+
             return chatMapper.toResponse(chat, owner);
         } catch (DataIntegrityViolationException e) {
             throw new ConflictException("Chat already exists");
@@ -87,6 +97,13 @@ public class ChatService {
 
         createContactIfNotExists(user1, user2);
         createContactIfNotExists(user2, user1);
+
+        messagingTemplate.convertAndSendToUser(
+                user1.getUsername(), "/queue/chats", chatMapper.toResponse(chat, user1)
+        );
+        messagingTemplate.convertAndSendToUser(
+                user2.getUsername(), "/queue/chats", chatMapper.toResponse(chat, user2)
+        );
     }
 
     /* ================= LIST CHATS ================= */

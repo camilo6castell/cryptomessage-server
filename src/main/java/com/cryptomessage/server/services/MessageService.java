@@ -10,6 +10,7 @@ import com.cryptomessage.server.model.entity.user.AppUser;
 import com.cryptomessage.server.model.mapper.MessageMapper;
 import com.cryptomessage.server.repositories.ChatRepository;
 import com.cryptomessage.server.repositories.MessageRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -23,17 +24,20 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public MessageService(
             MessageRepository messageRepository,
             ChatRepository chatRepository,
             CurrentUserService currentUserService,
-            MessageMapper messageMapper
+            MessageMapper messageMapper,
+            SimpMessagingTemplate messagingTemplate
     ) {
         this.messageRepository = messageRepository;
         this.chatRepository = chatRepository;
         this.currentUserService = currentUserService;
         this.messageMapper = messageMapper;
+        this.messagingTemplate = messagingTemplate;
     }
 
     private void validateMessagePermission(Chat chat, AppUser sender) {
@@ -75,10 +79,25 @@ public class MessageService {
         chat.addMessage(message);
         chatRepository.save(chat);
 
-        return messageMapper.toResponse(
-                message,
-                encryptedContent.get(sender.getUserId())
+        AppUser recipient = chat.getOtherParticipant(sender.getUserId());
+
+        MessageResponse responseForSender = messageMapper.toResponse(
+                message, encryptedContent.get(sender.getUserId())
         );
+        MessageResponse responseForRecipient = messageMapper.toResponse(
+                message, encryptedContent.get(recipient.getUserId())
+        );
+
+        // Push to the recipient, and echo back to the sender too so any other
+        // active session for the same account (multi-device) stays in sync.
+        messagingTemplate.convertAndSendToUser(
+                recipient.getUsername(), "/queue/messages", responseForRecipient
+        );
+        messagingTemplate.convertAndSendToUser(
+                sender.getUsername(), "/queue/messages", responseForSender
+        );
+
+        return responseForSender;
     }
 
     /* ================= GET MESSAGES ================= */

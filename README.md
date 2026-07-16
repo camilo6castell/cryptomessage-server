@@ -152,6 +152,25 @@ Both participants must be present as keys. The server validates this and rejects
 | POST   | `/`               | Add a contact (requires accepted chat)   |
 | DELETE | `/{contactId}`    | Remove a contact                         |
 
+### Realtime — `/ws` (STOMP over WebSocket)
+
+New messages and chat status changes are pushed live instead of requiring a reload.
+
+- **Endpoint:** `ws(s)://<host>/ws` — raw WebSocket (no SockJS fallback).
+- **Auth:** the handshake itself is anonymous; the STOMP `CONNECT` frame must carry a
+  native `Authorization: Bearer <jwt>` header. A missing or invalid token closes the
+  connection before any subscription is accepted.
+- **Subscriptions** (per-user, via Spring's `/user` prefix):
+
+  | Destination            | Payload         | Fired on                          |
+  |-------------------------|-----------------|------------------------------------|
+  | `/user/queue/messages`  | `MessageResponse` | A message was sent in one of your chats (echoed to your own other sessions too) |
+  | `/user/queue/chats`     | `ChatResponse`    | A chat was created (to the recipient) or accepted (to both participants) |
+
+  Both payloads are the same DTOs the REST endpoints already return — the server relays
+  the same opaque ciphertext it stores, nothing more is decrypted or exposed to make
+  this work.
+
 ---
 
 ## Running Locally
