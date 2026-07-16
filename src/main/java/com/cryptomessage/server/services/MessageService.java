@@ -77,6 +77,8 @@ public class MessageService {
         Message message = new Message(chat, sender, encryptedContent);
 
         chat.addMessage(message);
+        messageRepository.save(message);
+
         chatRepository.save(chat);
 
         AppUser recipient = chat.getOtherParticipant(sender.getUserId());
