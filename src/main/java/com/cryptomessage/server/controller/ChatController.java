@@ -1,9 +1,11 @@
 package com.cryptomessage.server.controller;
 
+import com.cryptomessage.server.application.chat.AcceptChatUseCase;
+import com.cryptomessage.server.application.chat.CreateChatUseCase;
+import com.cryptomessage.server.application.chat.GetMyChatsUseCase;
 import com.cryptomessage.server.model.dto.chat.ChatResponse;
 import com.cryptomessage.server.model.dto.chat.CreateChatRequest;
 import com.cryptomessage.server.model.entity.chat.ChatStatus;
-import com.cryptomessage.server.services.ChatService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +16,18 @@ import java.util.List;
 @RequestMapping("/api/v1/chats")
 public class ChatController {
 
-    private final ChatService chatService;
+    private final CreateChatUseCase createChatUseCase;
+    private final GetMyChatsUseCase getMyChatsUseCase;
+    private final AcceptChatUseCase acceptChatUseCase;
 
-    public ChatController(ChatService chatService) {
-        this.chatService = chatService;
+    public ChatController(
+            CreateChatUseCase createChatUseCase,
+            GetMyChatsUseCase getMyChatsUseCase,
+            AcceptChatUseCase acceptChatUseCase
+    ) {
+        this.createChatUseCase = createChatUseCase;
+        this.getMyChatsUseCase = getMyChatsUseCase;
+        this.acceptChatUseCase = acceptChatUseCase;
     }
 
     /* ================= CREATE CHAT ================= */
@@ -27,7 +37,7 @@ public class ChatController {
             @RequestBody CreateChatRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(chatService.createChat(request.username()));
+                .body(createChatUseCase.execute(request.username()));
     }
 
     /* ================= LIST CHATS ================= */
@@ -37,7 +47,7 @@ public class ChatController {
             @RequestParam(required = false) ChatStatus status
     ) {
         return ResponseEntity.ok(
-                chatService.getMyChats(status)
+                getMyChatsUseCase.execute(status)
         );
     }
 
@@ -47,9 +57,7 @@ public class ChatController {
     public ResponseEntity<Void> acceptChat(
             @PathVariable Long chatId
     ) {
-        chatService.acceptChat(chatId);
+        acceptChatUseCase.execute(chatId);
         return ResponseEntity.ok().build();
     }
 }
-
-

@@ -55,4 +55,14 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     AND c.messages IS EMPTY
     """)
     void deleteEmptyChatsOlderThan(LocalDateTime limit);
+
+    // Read-only counterpart to the query above, used by Scheduler to collect
+    // aggregate ids before the rows are deleted, so their event streams can be
+    // purged too. Same WHERE clause, kept in sync deliberately.
+    @Query("""
+    SELECT c FROM Chat c
+    WHERE c.createdAt < :limit
+    AND c.messages IS EMPTY
+    """)
+    List<Chat> findEmptyChatsOlderThan(LocalDateTime limit);
 }

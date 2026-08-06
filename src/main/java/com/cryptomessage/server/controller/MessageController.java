@@ -1,8 +1,10 @@
 package com.cryptomessage.server.controller;
 
+import com.cryptomessage.server.application.message.GetMessagesByChatUseCase;
+import com.cryptomessage.server.application.message.MarkChatAsReadUseCase;
+import com.cryptomessage.server.application.message.SendMessageUseCase;
 import com.cryptomessage.server.model.dto.message.MessageResponse;
 import com.cryptomessage.server.model.dto.message.SendMessageRequest;
-import com.cryptomessage.server.services.MessageService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,10 +15,18 @@ import java.util.List;
 @RestController
 public class MessageController {
 
-    private final MessageService messageService;
+    private final SendMessageUseCase sendMessageUseCase;
+    private final GetMessagesByChatUseCase getMessagesByChatUseCase;
+    private final MarkChatAsReadUseCase markChatAsReadUseCase;
 
-    public MessageController(MessageService messageService) {
-        this.messageService = messageService;
+    public MessageController(
+            SendMessageUseCase sendMessageUseCase,
+            GetMessagesByChatUseCase getMessagesByChatUseCase,
+            MarkChatAsReadUseCase markChatAsReadUseCase
+    ) {
+        this.sendMessageUseCase = sendMessageUseCase;
+        this.getMessagesByChatUseCase = getMessagesByChatUseCase;
+        this.markChatAsReadUseCase = markChatAsReadUseCase;
     }
 
     /* ================= SEND MESSAGE ================= */
@@ -25,10 +35,7 @@ public class MessageController {
     public ResponseEntity<MessageResponse> sendMessage(
             @RequestBody SendMessageRequest request
     ) {
-
-        MessageResponse response =
-                messageService.sendMessage(request);
-
+        MessageResponse response = sendMessageUseCase.execute(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -38,9 +45,8 @@ public class MessageController {
     public ResponseEntity<List<MessageResponse>> getMessagesByChat(
             @PathVariable Long chatId
     ) {
-
         return ResponseEntity.ok(
-                messageService.getMessagesByChat(chatId)
+                getMessagesByChatUseCase.execute(chatId)
         );
     }
 
@@ -48,7 +54,7 @@ public class MessageController {
     public ResponseEntity<Void> markChatAsRead(
             @PathVariable Long chatId
     ) {
-        messageService.markChatAsRead(chatId);
+        markChatAsReadUseCase.execute(chatId);
         return ResponseEntity.noContent().build();
     }
 }

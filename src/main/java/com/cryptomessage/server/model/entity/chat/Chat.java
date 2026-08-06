@@ -21,8 +21,12 @@ import java.util.Set;
 )
 public class Chat {
 
+    // NOTE: no longer @GeneratedValue(IDENTITY). This row is now a read-model
+    // projection of the event-sourced Chat aggregate (see domain.chat.Chat and
+    // infrastructure.projection.ChatProjector) — its id must match the aggregate's
+    // ChatId exactly, which is minted up front by ChatIdGenerator so the frontend
+    // keeps seeing the same Long chatId it always has, in requests and responses.
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "chat_id")
     private Long chatId;
 
@@ -55,13 +59,18 @@ public class Chat {
         // JPA
     }
 
-    public Chat(AppUser a, AppUser b, AppUser initiatedBy) {
+    public Chat(Long chatId, AppUser a, AppUser b, AppUser initiatedBy) {
+        if (chatId == null) {
+            throw new IllegalArgumentException("chatId must be provided by the caller (see ChatIdGenerator)");
+        }
         if (a == null || b == null) {
             throw new IllegalArgumentException("Users cannot be null");
         }
         if (a.getUserId().equals(b.getUserId())) {
             throw new IllegalArgumentException("Cannot create chat with the same user");
         }
+
+        this.chatId = chatId;
 
         if (a.getUserId() < b.getUserId()) {
             this.appUser1 = a;
