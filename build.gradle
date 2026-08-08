@@ -46,6 +46,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // ARCHITECTURE TESTS — enforce the layer boundaries package-based Hexagonal
+    // relies on (no compiler module boundary here, unlike Library Provider's
+    // multi-module Gradle layout — see docs/MIGRATION_NOTES.md for why).
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.5.0'
 }
 
 tasks.named('test') {

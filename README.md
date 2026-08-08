@@ -25,6 +25,7 @@
 - [Philosophy](#-philosophy)
 - [How Encryption Works](#-how-encryption-works)
 - [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
 - [Project Structure](#-project-structure)
 - [Domain Model](#-domain-model)
 - [API Reference](#-api-reference)
@@ -108,6 +109,42 @@ See the frontend README's "Cryptography Architecture" section for the client-sid
 | API Docs      | SpringDoc OpenAPI (Swagger UI)           | 2.5.0                     |
 | Build         | Gradle                                   | 8.14.4                    |
 | Container     | Docker (`eclipse-temurin:17-jdk`)        | —                         |
+| Architecture tests | ArchUnit                            | 1.5.0                     |
+
+---
+
+## 🏛️ Architecture
+
+The `Chat` slice (chats + messages — the part of this app with real audit/history
+value) is built on **Domain-Driven Design**, **Event Sourcing**, and
+**Hexagonal Architecture**. `AppUser`, `Contact`, and authentication
+deliberately stay plain layered/JPA — not everything benefits from these
+patterns, and forcing them onto user profile data would be complexity with no
+payoff.
+
+- **DDD**: `domain.chat.Chat` is the aggregate root — every chat/message
+  invariant (who can message whom, when, how many messages before a chat is
+  accepted) lives there and nowhere else.
+- **Event Sourcing**: `Chat`'s state isn't stored directly. It's derived by
+  replaying its own event stream (`ChatCreated`, `MessageSent`, `ChatAccepted`,
+  `ChatRead`), persisted in an append-only `events` table.
+- **Hexagonal**: the domain depends only on **ports**
+  (`domain.chat.port.*`) — `infrastructure.*` provides the adapters (JPA event
+  store, STOMP notifications) that implement them. The domain has zero
+  dependency on Spring or JPA — see `docs/MIGRATION_NOTES.md`.
+- **CQRS, deliberately partial**: the existing `chats`/`messages`/`contacts`
+  tables became the *read model*, kept in sync **synchronously** (same
+  transaction as the event append — this app has no message queue, and
+  eventual consistency in a chat's own message list would be user-visible).
+
+This is a **package-based** implementation of Hexagonal (not multi-module
+Gradle) — the boundaries above are enforced by ArchUnit tests
+(`src/test/.../architecture/`) rather than by the compiler. See
+`docs/MIGRATION_NOTES.md` for the full reasoning behind every compatibility
+decision made while introducing this (why `ChatId` is a `Long` and not a UUID,
+why the retention scheduler also purges the event store, etc.), and
+**`apuntes/`** for a from-scratch, project-specific explanation of DDD, Event
+Sourcing, and Hexagonal Architecture as study material.
 
 ---
 
@@ -117,34 +154,51 @@ See the frontend README's "Cryptography Architecture" section for the client-sid
 src/main/java/com/cryptomessage/server/
 ├── ServerApplication.java
 ├── controller/
-│   ├── AuthenticationController.java   # /api/v1/auth
-│   ├── ChatController.java             # /api/v1/chats
-│   ├── ContactController.java          # /api/v1/contacts
-│   ├── MessageController.java          # /api/v1/messages
+│   ├── AuthenticationController.java   # /api/v1/auth        — unchanged
+│   ├── ChatController.java             # /api/v1/chats       — delegates to application.chat.*
+│   ├── ContactController.java          # /api/v1/contacts    — unchanged
+│   ├── MessageController.java          # /api/v1/messages    — delegates to application.message.*
 │   └── GlobalExceptionHandler.java     # Centralized error mapping → ApiError
+│
+├── domain/                             # ── Pure Java. No Spring, no JPA. ──
+│   ├── generic/                        # AggregateRoot, DomainEvent, EventChange... (ES framework)
+│   ├── shared/UserId.java
+│   └── chat/
+│       ├── Chat.java, ChatId.java, MessageId.java, ChatBehavior.java
+│       ├── events/                     # ChatCreated, MessageSent, ChatAccepted, ChatRead
+│       ├── exceptions/                 # Chat invariant violations
+│       └── port/                       # ChatAggregateRepository, ChatIdGenerator, NotificationPort
+│
+├── application/                        # Use cases — orchestrate the domain, one per action
+│   ├── chat/          # CreateChatUseCase, AcceptChatUseCase, GetMyChatsUseCase
+│   └── message/        # SendMessageUseCase, GetMessagesByChatUseCase, MarkChatAsReadUseCase
+│
+├── infrastructure/                     # Adapters — implement the domain's ports
+│   ├── eventstore/     # StoredEvent (JPA), EventSerializer, ChatAggregateRepositoryAdapter, JpaChatIdGenerator
+│   ├── projection/      # ChatProjector — turns domain events into read-model updates
+│   └── notification/    # StompNotificationAdapter
+│
 ├── services/
 │   ├── AuthenticationService.java      # Login + token verification
 │   ├── UserRegistrationService.java    # Registration + key material storage
 │   ├── JwtService.java                 # Token issuance / validation (HMAC-SHA256)
 │   ├── CurrentUserService.java         # Resolves the authenticated AppUser
-│   ├── ChatService.java                # Chat lifecycle (create/list/accept)
 │   ├── ContactService.java             # Contact search / add / remove
-│   ├── MessageService.java             # Send/list/mark-as-read
 │   ├── UserDetailsServiceImpl.java     # Spring Security UserDetailsService
-│   └── Scheduler.java                  # Nightly data-retention jobs
-├── repositories/                       # Spring Data JPA interfaces
+│   └── Scheduler.java                  # Nightly data-retention jobs — also purges the event store
+├── repositories/                       # Spring Data JPA interfaces — now the CQRS *read* side for Chat
 │   ├── UserRepository.java
 │   ├── ChatRepository.java
 │   ├── MessageRepository.java
 │   └── ContactRepository.java
 ├── model/
-│   ├── entity/
+│   ├── entity/                         # Read-model JPA entities (see Architecture)
 │   │   ├── user/AppUser.java
 │   │   ├── chat/Chat.java, ChatStatus.java
 │   │   ├── message/Message.java, ContentByUserConverter.java
 │   │   └── contact/Contact.java, ContactId.java
-│   ├── dto/                            # Request/response records, grouped by domain
-│   └── mapper/                         # Entity → DTO mapping (ChatMapper, MessageMapper...)
+│   ├── dto/                            # Request/response records, grouped by domain — unchanged
+│   └── mapper/                         # Entity → DTO mapping (ChatMapper, MessageMapper...) — unchanged
 └── config/
     ├── SecurityConfig.java             # Filter chain, stateless sessions, route rules
     ├── SwaggerConfig.java              # OpenAPI metadata
@@ -158,7 +212,23 @@ src/main/java/com/cryptomessage/server/
     └── exceptions/
         ├── ConflictException.java      # → 409
         └── ForbiddenException.java     # → 403
+
+src/test/java/com/cryptomessage/server/
+├── services/                           # AuthenticationServiceTest
+├── architecture/                       # ArchUnit — enforces the layering above
+└── ServerApplicationTests.java
+
+docs/
+├── MIGRATION_NOTES.md                  # Every compatibility decision, explained
+└── schema-additions.sql                # events / chat_id_sequences DDL for ddl-auto=validate environments
+
+apuntes/                                # Study material — DDD / Event Sourcing / Hexagonal, from scratch
 ```
+
+Note: `ChatService.java` and `MessageService.java` no longer exist — their
+responsibilities moved into `domain.chat.Chat` (the invariants) and
+`application.chat` / `application.message` (the orchestration). See
+`docs/MIGRATION_NOTES.md`.
 
 ---
 
@@ -166,10 +236,11 @@ src/main/java/com/cryptomessage/server/
 
 | Entity | Key fields | Notes |
 |---|---|---|
-| `AppUser` | `username` (unique), `passphraseHash` (BCrypt), `publicKey`, `encryptedPrivateKey`, `lastSeen` | `recordActivity()` bumps `lastSeen` on every authenticated action — this is what keeps the account out of the inactivity-cleanup job. |
-| `Chat` | `appUser1`, `appUser2`, `status` (`PENDING`/`ACCEPTED`), `initiatedBy` | Unique constraint on `(user1_id, user2_id)`; a duplicate `createChat` call is caught and rethrown as a `409 Conflict`. |
-| `Message` | `chat`, `sender`, `contentByUser` (`Map<userId, ciphertext>`), `isRead` | `contentByUser` is persisted via a custom `AttributeConverter` (`ContentByUserConverter`) — the column itself is opaque `TEXT`, the server never parses the ciphertext values, only the map's keys. |
-| `Contact` / `ContactId` | Composite key `(ownerId, contactId)` | Created bidirectionally when a chat is accepted. |
+| `AppUser` | `username` (unique), `passphraseHash` (BCrypt), `publicKey`, `encryptedPrivateKey`, `lastSeen` | `recordActivity()` bumps `lastSeen` on every authenticated action — this is what keeps the account out of the inactivity-cleanup job. Plain JPA entity, not event-sourced — see [Architecture](#-architecture). |
+| `Chat` (write side — `domain.chat.Chat`) | `user1Id`, `user2Id`, `initiatedBy`, `status`, `hasPendingMessage` | Event-sourced aggregate. Holds the *minimum* state needed to validate its own invariants, not the message history — see `apuntes/` for why. |
+| `Chat` (read side — `model.entity.chat.Chat`) | Same shape as before this migration | The projection `ChatController`/`MessageController` actually read from. Unique constraint on `(user1_id, user2_id)` still lives here. |
+| `Message` | `chat`, `sender`, `contentByUser` (`Map<userId, ciphertext>`), `isRead` | Read-model row, written by `ChatProjector` in reaction to a `MessageSent` event. `contentByUser` is persisted via a custom `AttributeConverter` (`ContentByUserConverter`) — the column itself is opaque `TEXT`, the server never parses the ciphertext values, only the map's keys. |
+| `Contact` / `ContactId` | Composite key `(ownerId, contactId)` | Created bidirectionally when `ChatProjector` reacts to `ChatAccepted`. Deliberately *not* its own event-sourced aggregate — see [Architecture](#-architecture). |
 
 ---
 
@@ -274,11 +345,14 @@ A scheduler runs nightly (starting 03:00 server time) and permanently deletes da
 
 | Job                     | Data               | Deleted after           | Cron              |
 |--------------------------|--------------------|----------------------------|--------------------|
-| `deleteOldMessages`      | Messages            | 15 days                    | `0 0 3 * * *`      |
-| `deleteEmptyChats`       | Empty chats         | 30 days                    | `0 15 3 * * *`     |
+| `deleteOldMessages`      | Messages (+ their `MessageSent` events) | 15 days | `0 0 3 * * *`      |
+| `deleteEmptyChats`       | Empty chats (+ their full event stream) | 30 days | `0 15 3 * * *`     |
 | `deleteInactiveUsers`    | Inactive accounts   | 45 days without `recordActivity()` | `0 30 3 * * *` |
 
-Deletion is hard — no soft-delete, no archive, no audit log. Once the window passes, the data is gone.
+Deletion is hard — no soft-delete, no archive, no audit log. Once the window
+passes, the data is gone — from the read-model tables **and** from the event
+store. Event Sourcing's usual "never delete anything" default would otherwise
+quietly undermine this policy; see `docs/MIGRATION_NOTES.md`.
 
 ---
 
@@ -342,6 +416,13 @@ docker run -p 8080:8080 \
 
 The production profile is active by default in the container image (MySQL driver, `ddl-auto=validate`, `show-sql=false`). The `Dockerfile` uses a two-stage build — `gradle:8.14.4-jdk17` to compile, `eclipse-temurin:17-jdk` to run — so the shipped image doesn't carry the Gradle toolchain.
 
+> **New tables since the DDD/Event Sourcing migration:** `events` and
+> `chat_id_sequences`. With `ddl-auto=validate`, run `docs/schema-additions.sql`
+> against the prod database once, manually. (If you're bootstrapping a fresh
+> environment with no data yet, temporarily setting `ddl-auto=update` to let
+> Hibernate create everything works too — just switch back to `validate`, or
+> introduce a real migration tool, once there's real data to protect.)
+
 ---
 
 ## ✅ Testing
@@ -351,6 +432,11 @@ The production profile is active by default in the container image (MySQL driver
 ```
 
 JUnit 5 is wired in via `spring-boot-starter-test` and `spring-security-test`. Test coverage currently focuses on the authentication and chat-creation service logic — see `src/test/java/com/cryptomessage/server/services/`.
+
+`src/test/java/com/cryptomessage/server/architecture/` additionally runs as
+part of the same `./gradlew test` — **ArchUnit** rules that enforce the
+domain/application/infrastructure layering described in
+[Architecture](#-architecture) at build time, not just by convention.
 
 ---
 

@@ -73,6 +73,38 @@ apply the `chats.chat_id` column change in production. Run
 **`docs/schema-additions.sql`** against the prod database first. Dev
 (`ddl-auto=update`) gets all of this for free.
 
+## Architecture enforced by tests, not by the compiler
+
+Package-based Hexagonal (as opposed to Library Provider's multi-module Gradle)
+means nothing stops someone from writing `import ...infrastructure...;` inside
+`domain.chat.Chat` and having it compile fine. `src/test/java/.../architecture/`
+now enforces the same boundaries with **ArchUnit**, run as a normal part of
+`./gradlew test`:
+
+- `DomainIndependenceTest` — domain depends on nothing but the JDK, plus the
+  one documented exception (`ChatStatus`).
+- `ApplicationLayerTest` — use cases depend on domain **ports**, never on the
+  concrete adapters that implement them (except the CQRS read/projection side
+  — deliberately allowed, see the class javadoc for why).
+- `MigratedControllersTest` — scoped only to `ChatController`/`MessageController`
+  (the two this migration touched); doesn't make claims about the untouched
+  auth/contact controllers.
+- `GeneralCodeQualityTest` — constructor injection only (no `@Autowired`
+  fields), no package cycles inside `domain.chat`.
+
+If you extend this pattern to `AppUser`/`Contact` later, these tests are what
+will catch it if the boundary gets blurred by accident.
+
+## About `ddl-auto`
+
+`docs/schema-additions.sql` assumes `ddl-auto=validate` in prod (manual schema
+management, matching what was already there). Since there's no production
+data yet, temporarily switching prod to `ddl-auto=update` to have Hibernate
+create everything (including the two new tables) is a reasonable shortcut —
+just remember to switch it back to `validate` (or introduce a real migration
+tool like Flyway) once there's real data you can't afford to have Hibernate
+guess about.
+
 ## Deliberately left for a future step
 
 - `AppUser` and `Contact` were intentionally not converted — see point 2 in

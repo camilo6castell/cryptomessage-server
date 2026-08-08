@@ -65,4 +65,24 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     AND c.messages IS EMPTY
     """)
     List<Chat> findEmptyChatsOlderThan(LocalDateTime limit);
+
+    // A chat can have at most one message while PENDING (see Chat#sendMessage's
+    // invariant). If that single message is about to be purged by
+    // deleteOldMessages, the chat is left "stuck": still PENDING, but with no
+    // trace that a message was ever sent — the initiator could then send a
+    // second "first" message, silently bypassing that invariant on replay.
+    // Scheduler treats these exactly like abandoned chats: deletes the whole
+    // thing now instead of leaving it in that inconsistent state until
+    // deleteEmptyChats eventually catches it, days later. See
+    // apuntes/05-decisiones-de-diseno/03-chats-pendientes-abandonados.md.
+    @Query("""
+    SELECT DISTINCT c FROM Chat c
+    JOIN c.messages m
+    WHERE c.status = :status
+    AND m.sentAt < :limit
+    """)
+    List<Chat> findChatsByStatusWithMessagesOlderThan(
+            @Param("status") ChatStatus status,
+            @Param("limit") LocalDateTime limit
+    );
 }
